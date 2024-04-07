@@ -4,7 +4,6 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
 import com.digital.pianoassist.feature_songs.domain.model.Recording
-import com.digital.pianoassist.feature_songs.domain.model.Song
 import kotlinx.coroutines.flow.Flow
 
 @Dao

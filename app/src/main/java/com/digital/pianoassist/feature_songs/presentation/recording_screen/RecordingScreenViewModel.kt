@@ -23,13 +23,10 @@ class RecordingScreenViewModel @Inject constructor(
     Depending on what fits better, we can either use a single class with all the states or individual
     state objects. !Careful with the single state class that combines multiple states, if one is changed,
     the whole UI wil be modified.
+
+    Private mutable and public immutable state is a common pattern for mvvm to ensure separation of
+    concerns. Also, using immutable states also helps ensure thread safety.
      */
-    // hte private mutable and public immutable state is a common pattern for mvvm to ensure separation
-    // of concerns
-    // the private mutable state is only for hte model view to control and modify
-    // immutable state for external observers - read-only view for the observers (such as ui)
-    // it is immutable to ensure that the external components cannot modify the state directly
-    // using immutbale states also helps ensure thread safety
     private val _songTitle = mutableStateOf("")
     val songTitle: State<String> = _songTitle
 
@@ -41,9 +38,9 @@ class RecordingScreenViewModel @Inject constructor(
                     useCases.getSongUseCase(songId)?.also { song ->
                         currentSongId = song.id
 
-                        // here we should also display whatever is related to the song (eq. title)
-                        // using substring instead of copy!!!
-                        _songTitle.value = songTitle.value.substring(songTitle.value.length)
+                        // Update the mutable value, so the immutable one will also change and
+                        // it will recompose the recording Screen
+                        _songTitle.value = song.title
                     }
                 }
             }

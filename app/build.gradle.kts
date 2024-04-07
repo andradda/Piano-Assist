@@ -3,6 +3,7 @@ plugins {
     id("org.jetbrains.kotlin.android")
     id("kotlin-kapt") // kapt = Kotlin Annotation Processing Tool, to work with annotation processors
     id("com.google.dagger.hilt.android")
+    id("kotlin-parcelize")
 }
 
 

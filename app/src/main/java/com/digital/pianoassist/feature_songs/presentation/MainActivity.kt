@@ -44,7 +44,11 @@ class MainActivity : ComponentActivity() {
                                 }
                             )
                         ) {
-                            RecordingScreen(navController = navController)
+                            RecordingScreen(
+                                navController = navController,
+                                context = this@MainActivity,
+                                activity = this@MainActivity
+                            )
                         }
                     }
                 }
