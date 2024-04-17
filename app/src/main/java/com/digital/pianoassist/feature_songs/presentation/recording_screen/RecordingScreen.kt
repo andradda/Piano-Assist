@@ -1,8 +1,10 @@
 package com.digital.pianoassist.feature_songs.presentation.recording_screen
 
 import android.annotation.SuppressLint
-import android.app.Activity
-import android.content.Context
+import android.content.pm.PackageManager
+import android.util.Log
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -28,12 +30,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.digital.pianoassist.feature_songs.presentation.recording_screen.components.AndroidAudioRecorder
 import com.digital.pianoassist.logDebug
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -41,26 +47,28 @@ import java.io.File
 @Composable
 fun RecordingScreen(
     navController: NavController,
-    viewModel: RecordingScreenViewModel = hiltViewModel(),
-    context: Context,
-    activity: Activity
+    viewModel: RecordingScreenViewModel = hiltViewModel()
 ) {
+
     val titleState = viewModel.songTitle.value
 
     val recorder by rememberSaveable {
         mutableStateOf(AndroidAudioRecorder())
     }
 
-    var audioFile: File? = null // the file where we save the recording
-
     var isRecording by rememberSaveable { mutableStateOf(false) }
 
     /*TODO("proper permission handling")*/
-    ActivityCompat.requestPermissions(
-        activity,
-        arrayOf(android.Manifest.permission.RECORD_AUDIO),
-        0
-    )
+    val launcher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        if (isGranted) {
+            Log.d("RecordingScreen", "PERMISSION GRANTED")
+        } else {
+            Log.d("RecordingScreen", "PERMISSION DENIED")
+        }
+    }
+    val appContext = LocalContext.current.applicationContext
 
     Scaffold(
         topBar = {
@@ -100,20 +108,37 @@ fun RecordingScreen(
         ) {
             Button(
                 onClick = {
-                    logDebug("Button clicked")
+                    // Check permission
+                    when (PackageManager.PERMISSION_GRANTED) {
+                        ContextCompat.checkSelfPermission(
+                            appContext,
+                            android.Manifest.permission.RECORD_AUDIO
+                        ) -> {
+                            logDebug("Recording permission is granted")
+                        }
+
+                        else -> {
+                            logDebug("Recording permission is not granted")
+                            launcher.launch(android.Manifest.permission.RECORD_AUDIO)
+                            return@Button
+                        }
+                    }
+                    logDebug("Recording button clicked")
                     if (isRecording) {
                         logDebug("onClick: recorder stop")
                         recorder.stop()
 
                     } else {
                         println("onClick: start recording")
-                        // save it in the internal storage of the app which cannot be accessed from the outside
                         File(
-                            context.cacheDir,
-                            "audio.mp3"
+                            appContext.cacheDir,
+                            "audio.raw"
                         ).also {
-                            recorder.start(context, it)
-                            audioFile = it
+                            CoroutineScope(Dispatchers.IO).launch {
+                                logDebug("Coroutine started the recorder")
+
+                                recorder.start(appContext, it)
+                            }
                         }
                     }
                     isRecording = !isRecording

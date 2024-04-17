@@ -5,6 +5,6 @@ import java.io.File
 
 // Implementing through an interface would help for testing purposes
 interface AudioRecorder {
-    fun start(context: Context, outputFile: File)
+    suspend fun start(context: Context, outputFile: File)
     fun stop()
 }
