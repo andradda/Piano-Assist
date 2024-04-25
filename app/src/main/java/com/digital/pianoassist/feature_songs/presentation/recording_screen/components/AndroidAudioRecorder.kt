@@ -73,6 +73,7 @@ class AndroidAudioRecorder : AudioRecorder, Parcelable {
         }
 
         recorder!!.startRecording()
+        isRecording = true
         logInformation("startRecording() recorder started recording")
         writeDataToAudioFile(outputFile)
     }
