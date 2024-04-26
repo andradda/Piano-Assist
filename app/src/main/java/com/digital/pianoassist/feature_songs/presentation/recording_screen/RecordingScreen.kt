@@ -40,7 +40,6 @@ import com.digital.pianoassist.logDebug
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
@@ -130,16 +129,11 @@ fun RecordingScreen(
 
                     } else {
                         println("onClick: start recording")
-                        File(
-                            appContext.cacheDir,
-                            "audio.raw"
-                        ).also {
-                            CoroutineScope(Dispatchers.IO).launch {
-                                logDebug("Coroutine started the recorder")
-
-                                recorder.start(appContext, it)
-                            }
+                        CoroutineScope(Dispatchers.IO).launch {
+                            logDebug("Coroutine started the recorder")
+                            recorder.start(appContext)
                         }
+
                     }
                     isRecording = !isRecording
 

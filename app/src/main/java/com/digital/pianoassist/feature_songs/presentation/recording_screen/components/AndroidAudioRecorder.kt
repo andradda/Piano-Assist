@@ -8,14 +8,19 @@ import android.media.AudioRecord
 import android.media.MediaRecorder
 import android.os.Parcelable
 import androidx.core.app.ActivityCompat
+import com.digital.pianoassist.feature_songs.presentation.recording_screen.fft.AudioRecorderWindowReader
+import com.digital.pianoassist.feature_songs.presentation.recording_screen.fft.FourierTransformer
+import com.digital.pianoassist.feature_songs.presentation.recording_screen.fft.HpsCalculator
+import com.digital.pianoassist.feature_songs.presentation.recording_screen.fft.NoteFinder
+import com.digital.pianoassist.feature_songs.presentation.recording_screen.fft.Window
+import com.digital.pianoassist.feature_songs.presentation.recording_screen.fft.WindowOverlapHalf
 import com.digital.pianoassist.logDebug
 import com.digital.pianoassist.logInformation
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.parcelize.Parcelize
-import java.io.DataOutputStream
-import java.io.File
-import java.io.FileOutputStream
-import java.io.IOException
 
 @Parcelize
 class AndroidAudioRecorder : AudioRecorder, Parcelable {
@@ -35,11 +40,22 @@ class AndroidAudioRecorder : AudioRecorder, Parcelable {
     val audioFormat = AudioFormat.ENCODING_PCM_FLOAT
 
     @IgnoredOnParcel
-    val bufferSizeRecording =
-        AudioRecord.getMinBufferSize(sampleRate, channelConfig, audioFormat)
+    val windowSize = 4096
 
     @IgnoredOnParcel
-    var isRecording = true
+    val bufferSizeRecordingBytes = windowSize * 4
+
+    @IgnoredOnParcel
+    private lateinit var fftTransformer: FourierTransformer
+
+    @IgnoredOnParcel
+    private lateinit var frequencies: DoubleArray
+
+    @IgnoredOnParcel
+    private lateinit var noteFinder: NoteFinder
+
+    @IgnoredOnParcel
+    private lateinit var recorderWindowReader: WindowOverlapHalf
     private fun createRecorder(context: Context): AudioRecord? {
         logInformation("enter createRecorder()")
         if (ActivityCompat.checkSelfPermission(
@@ -58,62 +74,53 @@ class AndroidAudioRecorder : AudioRecorder, Parcelable {
             sampleRate,
             channelConfig,
             audioFormat,
-            bufferSizeRecording
+            bufferSizeRecordingBytes
         )
     }
 
-    override suspend fun start(context: Context, outputFile: File) {
+    override suspend fun start(context: Context) {
         logInformation("enter start()")
         recorder = createRecorder(context)
         logDebug("recorder = $recorder")
 
-        if (recorder!!.state != AudioRecord.STATE_INITIALIZED) {
+        if (recorder?.state != AudioRecord.STATE_INITIALIZED) {
             logDebug("start() recorder doesn't have the state initialized")
             return
         }
+        fftTransformer = FourierTransformer()
+        frequencies = FourierTransformer.calculateFrequencies(sampleRate, windowSize)
+        noteFinder = NoteFinder(frequencies, windowSize)
 
-        recorder!!.startRecording()
-        isRecording = true
+        recorder?.startRecording()
         logInformation("startRecording() recorder started recording")
-        writeDataToAudioFile(outputFile)
+        processData()
     }
 
-    private fun writeDataToAudioFile(outputFile: File) {
-        logInformation("enter writeDataToAudioFile()")
-        val outputStream = FileOutputStream(outputFile)
+    private fun processData() {
+        logInformation("enter processData()")
+        recorderWindowReader = recorder?.let {
+            AudioRecorderWindowReader(
+                it,
+                windowSize,
+                windowSize * 1.0 / sampleRate
+            )
+        }?.let { WindowOverlapHalf(it) }!!
 
-        // Wrap the FileOutputStream with a DataOutputStream
-        val dataOutputStream = DataOutputStream(outputStream)
-
-        // buffer - the min amount of data(samples) that the recorder can read at once
-        val buffer = FloatArray(bufferSizeRecording)
-
-        while (isRecording) {
-            val readSize = recorder!!.read(buffer, 0, buffer.size, AudioRecord.READ_BLOCKING)
-            logDebug("just read $readSize bytes")
-            if (readSize > 0) {
-                logDebug("wrote to the .raw file $readSize bytes")
-                for (index in 0 until readSize) {
-                    dataOutputStream.writeFloat(buffer[index])
-                }
-            } else {
-                isRecording = false
+        for (window: Window in recorderWindowReader.iterateWindows()) {
+            CoroutineScope(Dispatchers.Default).launch {
+                val hammingWindow = window.hamming()
+                val fftMagnitude = fftTransformer.transform(hammingWindow)
+                val hps = HpsCalculator(3, fftMagnitude).calculate()
+                val notes = noteFinder.findNotes(hps, fftMagnitude)
+                println("${String.format("%.4f", window.milliseconds)} : $notes")
             }
-        }
-        try {
-            logDebug("trying to flush")
-            outputStream.flush()
-            outputStream.close()
-        } catch (e: IOException) {
-            logDebug("IOException while closing outputStream")
-            e.printStackTrace()
         }
     }
 
     override fun stop() {
         logInformation("enter stop()")
         logDebug("recorder = $recorder")
-        isRecording = false
+        recorderWindowReader
         recorder?.stop()
         recorder?.release()
         recorder = null

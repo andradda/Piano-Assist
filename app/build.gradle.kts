@@ -103,4 +103,7 @@ dependencies {
 
     // optional - Kotlin Extensions and Coroutines support for Room
     implementation("androidx.room:room-ktx:$room_version")
+
+    // FFT
+    implementation("org.apache.commons:commons-math3:3.0")
 }
