@@ -19,7 +19,7 @@ class AudioRecorderWindowReader(
             milliseconds += windowMilliseconds
 
             val readSize = try {
-                recorder.read(buffer, 0, buffer.size, AudioRecord.READ_BLOCKING)
+                recorder.read(buffer, 0, windowSize, AudioRecord.READ_BLOCKING)
             } catch (e: IllegalStateException) {
                 logDebug("Recorder was stopped while waiting to read")
                 isRecording = false

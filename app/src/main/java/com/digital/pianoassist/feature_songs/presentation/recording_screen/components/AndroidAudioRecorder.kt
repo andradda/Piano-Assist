@@ -16,9 +16,6 @@ import com.digital.pianoassist.feature_songs.presentation.recording_screen.fft.W
 import com.digital.pianoassist.feature_songs.presentation.recording_screen.fft.WindowOverlapHalf
 import com.digital.pianoassist.logDebug
 import com.digital.pianoassist.logInformation
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.parcelize.Parcelize
 
@@ -43,7 +40,10 @@ class AndroidAudioRecorder : AudioRecorder, Parcelable {
     val windowSize = 4096
 
     @IgnoredOnParcel
-    val bufferSizeRecordingBytes = windowSize * 4
+    val nrSeconds = 60
+
+    @IgnoredOnParcel
+    val recorderBufferSupplySizeBytes = nrSeconds * sampleRate * 4
 
     @IgnoredOnParcel
     private lateinit var fftTransformer: FourierTransformer
@@ -74,7 +74,7 @@ class AndroidAudioRecorder : AudioRecorder, Parcelable {
             sampleRate,
             channelConfig,
             audioFormat,
-            bufferSizeRecordingBytes
+            recorderBufferSupplySizeBytes
         )
     }
 
@@ -102,18 +102,16 @@ class AndroidAudioRecorder : AudioRecorder, Parcelable {
             AudioRecorderWindowReader(
                 it,
                 windowSize,
-                windowSize * 1.0 / sampleRate
+                windowSize * 1.0 / sampleRate // dt = number of seconds per window
             )
         }?.let { WindowOverlapHalf(it) }!!
 
         for (window: Window in recorderWindowReader.iterateWindows()) {
-            CoroutineScope(Dispatchers.Default).launch {
-                val hammingWindow = window.hamming()
-                val fftMagnitude = fftTransformer.transform(hammingWindow)
-                val hps = HpsCalculator(3, fftMagnitude).calculate()
-                val notes = noteFinder.findNotes(hps, fftMagnitude)
-                println("${String.format("%.4f", window.milliseconds)} : $notes")
-            }
+            val hammingWindow = window.hamming()
+            val fftMagnitude = fftTransformer.transform(hammingWindow)
+            val hps = HpsCalculator(3, fftMagnitude).calculate()
+            val notes = noteFinder.findNotes(hps, fftMagnitude)
+            println("${String.format("%.4f", window.milliseconds)} : $notes")
         }
     }
 
