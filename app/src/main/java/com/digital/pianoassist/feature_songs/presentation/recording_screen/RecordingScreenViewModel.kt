@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.digital.pianoassist.feature_songs.domain.use_cases.UseCases
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
+import java.io.InputStream
 import javax.inject.Inject
 
 @HiltViewModel
@@ -30,6 +31,10 @@ class RecordingScreenViewModel @Inject constructor(
     private val _songTitle = mutableStateOf("")
     val songTitle: State<String> = _songTitle
 
+    // TODO: temporary, all the fft logic should be moved to use case layer, not UI!!
+    private val _inputStream = mutableStateOf<InputStream?>(null)
+    val inputStream: State<InputStream?> = _inputStream
+
     init {
         savedStateHandle.get<Int>("songId")?.let { songId ->
             if (songId != -1) { // if it was clicked on a song
@@ -43,7 +48,20 @@ class RecordingScreenViewModel @Inject constructor(
                         _songTitle.value = song.title
                     }
                 }
+                getMidiStream(songId)
             }
+        }
+    }
+
+    private fun getMidiStream(songId: Int) {
+        viewModelScope.launch {
+            useCases.getMidiStreamUseCase(songId)?.also { midiStream ->
+                _inputStream.value = midiStream
+            }
+//            midiStream?.let {
+//                for (note in readMIDI(it)) {
+//                }
+//            }
         }
     }
 

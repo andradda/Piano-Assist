@@ -9,5 +9,6 @@ THIS IS THE CLASS THAT WILL BE INJECTED INTO THE VIEW MODEL
 data class UseCases(
     val getSongsUseCase: GetSongsUseCase,
     val getSongUseCase: GetSongUseCase,
-    val addRecordingUseCase: AddRecordingUseCase
+    val addRecordingUseCase: AddRecordingUseCase,
+    val getMidiStreamUseCase: GetMidiStreamUseCase
 )

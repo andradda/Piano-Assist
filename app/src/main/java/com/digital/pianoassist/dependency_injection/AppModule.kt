@@ -8,6 +8,7 @@ import com.digital.pianoassist.feature_songs.data.repository.SongRepositoryImpl
 import com.digital.pianoassist.feature_songs.domain.repository.RecordingRepository
 import com.digital.pianoassist.feature_songs.domain.repository.SongRepository
 import com.digital.pianoassist.feature_songs.domain.use_cases.AddRecordingUseCase
+import com.digital.pianoassist.feature_songs.domain.use_cases.GetMidiStreamUseCase
 import com.digital.pianoassist.feature_songs.domain.use_cases.GetSongUseCase
 import com.digital.pianoassist.feature_songs.domain.use_cases.GetSongsUseCase
 import com.digital.pianoassist.feature_songs.domain.use_cases.UseCases
@@ -67,7 +68,8 @@ object AppModule {
         return UseCases(
             getSongsUseCase = GetSongsUseCase(songRepository),
             addRecordingUseCase = AddRecordingUseCase(songRepository, recordingRepository),
-            getSongUseCase = GetSongUseCase(songRepository)
+            getSongUseCase = GetSongUseCase(songRepository),
+            getMidiStreamUseCase = GetMidiStreamUseCase(songRepository)
         )
     }
 }

@@ -1,26 +1,21 @@
 package com.digital.pianoassist.feature_songs.presentation.recording_screen.fft
 
-class Window(size: Int, var milliseconds: Double) {
+class Window(size: Int, var startSeconds: Double, var endSeconds: Double) {
     val data = DoubleArray(size)
 
     fun clone(): Window {
-        val clone = Window(data.size, milliseconds)
+        val clone = Window(data.size, startSeconds, endSeconds)
         data.copyInto(clone.data)
         return clone
     }
 
     fun hamming(): Window {
-        val window = Window(data.size, milliseconds)
+        val window = Window(data.size, startSeconds, endSeconds)
         for (i in data.indices) {
             window.data[i] = data[i] * hamming4096[i]
         }
         return window
     }
-
-    override fun toString(): String {
-        return "Window(milliseconds=$milliseconds)"
-    }
-
 
     companion object {
         val hamming4096 = doubleArrayOf(

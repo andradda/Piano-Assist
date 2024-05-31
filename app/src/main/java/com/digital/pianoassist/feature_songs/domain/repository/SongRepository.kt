@@ -2,6 +2,7 @@ package com.digital.pianoassist.feature_songs.domain.repository
 
 import com.digital.pianoassist.feature_songs.domain.model.Song
 import kotlinx.coroutines.flow.Flow
+import java.io.InputStream
 
 // The repository gets the data from the Database verifies if the queries/API class are
 // correct and forward the data to the use cases (which don't know where the repos gets the data from,
@@ -22,4 +23,6 @@ interface SongRepository {
     suspend fun getSongById(id: Int): Song?
 
     suspend fun updateSong(song: Song) // to update the maxScore
+
+    suspend fun getMidiDataById(id: Int): InputStream?
 }

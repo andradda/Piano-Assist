@@ -13,10 +13,10 @@ class AudioRecorderWindowReader(
     private val buffer = FloatArray(windowSize)
 
     override fun iterateWindows(): Sequence<Window> = sequence {
-        var milliseconds = 0.0
+        var seconds = 0.0
         while (isRecording && recorder.state != AudioRecord.STATE_UNINITIALIZED) {
-            val window = Window(windowSize, milliseconds)
-            milliseconds += windowMilliseconds
+            val window = Window(windowSize, seconds, seconds + windowMilliseconds)
+            seconds += windowMilliseconds
 
             val readSize = try {
                 recorder.read(buffer, 0, windowSize, AudioRecord.READ_BLOCKING)

@@ -21,7 +21,6 @@ class FourierTransformer {
     companion object {
         const val Nyquist = 2;
         fun calculateFrequencies(sampleRate: Int, windowSize: Int): DoubleArray {
-            // each  element in the result array will represent a frequency bin of this size (frequencyResolution)
             val frequencyResolution = sampleRate * 1.0 / windowSize
             val frequencies = DoubleArray(windowSize / Nyquist + 1) { it * frequencyResolution }
             return frequencies

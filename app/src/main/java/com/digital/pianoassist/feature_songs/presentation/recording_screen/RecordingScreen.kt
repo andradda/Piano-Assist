@@ -40,6 +40,7 @@ import com.digital.pianoassist.logDebug
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
@@ -50,6 +51,7 @@ fun RecordingScreen(
 ) {
 
     val titleState = viewModel.songTitle.value
+    val midiStream = viewModel.inputStream.value
 
     val recorder by rememberSaveable {
         mutableStateOf(AndroidAudioRecorder())
@@ -128,10 +130,12 @@ fun RecordingScreen(
                         recorder.stop()
 
                     } else {
+                        val audioFile = File(appContext.cacheDir, "audio.raw")
+                        audioFile.createNewFile()
                         println("onClick: start recording")
                         CoroutineScope(Dispatchers.IO).launch {
                             logDebug("Coroutine started the recorder")
-                            recorder.start(appContext)
+                            recorder.start(appContext, audioFile, midiStream)
                         }
 
                     }

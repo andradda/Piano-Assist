@@ -18,5 +18,8 @@ interface SongDao {
     @Update
     suspend fun updateSong(song: Song)
 
+    @Query("SELECT midiDataSheet FROM song WHERE id = :id")
+    suspend fun getMidiDataById(id: Int): ByteArray?
+
     // also filtering should go here
 }

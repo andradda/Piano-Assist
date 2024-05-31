@@ -106,4 +106,8 @@ dependencies {
 
     // FFT
     implementation("org.apache.commons:commons-math3:3.0")
+
+    // Midi
+    implementation(files("libs/android-midi-lib-1.0-SNAPSHOT.jar"))
+
 }
