@@ -1,4 +1,4 @@
-package com.digital.pianoassist.feature_songs.presentation.recording_screen.fft
+package com.digital.pianoassist.feature_songs.domain.fft
 
 import org.apache.commons.math3.transform.DftNormalization
 import org.apache.commons.math3.transform.FastFourierTransformer
@@ -19,7 +19,7 @@ class FourierTransformer {
     }
 
     companion object {
-        const val Nyquist = 2;
+        const val Nyquist = 2
         fun calculateFrequencies(sampleRate: Int, windowSize: Int): DoubleArray {
             val frequencyResolution = sampleRate * 1.0 / windowSize
             val frequencies = DoubleArray(windowSize / Nyquist + 1) { it * frequencyResolution }

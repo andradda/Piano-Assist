@@ -23,10 +23,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -35,12 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.digital.pianoassist.feature_songs.presentation.recording_screen.components.AndroidAudioRecorder
 import com.digital.pianoassist.logDebug
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
@@ -51,15 +42,16 @@ fun RecordingScreen(
 ) {
 
     val titleState = viewModel.songTitle.value
-    val midiStream = viewModel.inputStream.value
+    // val midiStream = viewModel.inputStream.value
 
-    val recorder by rememberSaveable {
-        mutableStateOf(AndroidAudioRecorder())
-    }
+//    val recorder by rememberSaveable {
+//        mutableStateOf(AndroidAudioRecorder())
+//    }
 
-    var isRecording by rememberSaveable { mutableStateOf(false) }
+    // var isRecording by rememberSaveable { mutableStateOf(false) }
+    val isRecordingState = viewModel.isRecordingState.value
+    val intermediateScore = viewModel.intermediateScore.value
 
-    /*TODO("proper permission handling")*/
     val launcher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted: Boolean ->
@@ -77,8 +69,8 @@ fun RecordingScreen(
                 title = { },
                 navigationIcon = {
                     IconButton(onClick = {
-                        if (isRecording) {
-                            recorder.stop()
+                        if (isRecordingState) {
+                            viewModel.onEvent(RecordingScreenEvent.StartRecording)
                         }
                         navController.popBackStack()
                     }) {
@@ -107,6 +99,7 @@ fun RecordingScreen(
             verticalArrangement = Arrangement.Bottom,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            Text(text = intermediateScore.toString())
             Button(
                 onClick = {
                     // Check permission
@@ -125,26 +118,26 @@ fun RecordingScreen(
                         }
                     }
                     logDebug("Recording button clicked")
-                    if (isRecording) {
+                    if (isRecordingState) {
                         logDebug("onClick: recorder stop")
-                        recorder.stop()
+                        viewModel.onEvent(RecordingScreenEvent.StopRecording)
 
                     } else {
-                        val audioFile = File(appContext.cacheDir, "audio.raw")
-                        audioFile.createNewFile()
-                        println("onClick: start recording")
-                        CoroutineScope(Dispatchers.IO).launch {
-                            logDebug("Coroutine started the recorder")
-                            recorder.start(appContext, audioFile, midiStream)
-                        }
-
+                        //  val audioFile = File(appContext.cacheDir, "audio.raw")
+                        // audioFile.createNewFile()
+                        // println("onClick: start recording")
+//                        CoroutineScope(Dispatchers.IO).launch {
+//                            logDebug("Coroutine started the recorder")
+//                            recorder.start(appContext, audioFile, midiStream)
+//                        }
+                        viewModel.onEvent(RecordingScreenEvent.StartRecording)
                     }
-                    isRecording = !isRecording
+                    // isRecording = !isRecording
 
                 },
-                colors = buttonColors(containerColor = if (isRecording) Color.Red else Color.DarkGray)
+                colors = buttonColors(containerColor = if (isRecordingState) Color.Red else Color.DarkGray)
             ) {
-                Text(text = if (isRecording) "Stop recording" else "Start recording")
+                Text(text = if (isRecordingState) "Stop recording" else "Start recording")
             }
         }
     }

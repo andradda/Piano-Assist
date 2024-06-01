@@ -1,4 +1,4 @@
-package com.digital.pianoassist.feature_songs.presentation.recording_screen.fft
+package com.digital.pianoassist.feature_songs.domain.fft
 
 import android.media.AudioRecord
 import com.digital.pianoassist.logDebug

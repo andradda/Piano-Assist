@@ -1,4 +1,4 @@
-package com.digital.pianoassist.feature_songs.presentation.recording_screen.fft
+package com.digital.pianoassist.feature_songs.domain.fft
 
 import kotlin.math.abs
 import kotlin.math.pow
@@ -8,8 +8,8 @@ class NoteFinder(
     windowSize: Int,
     private val nrHarmonics: Int,
     private val hpsThreshold: Double,
-    private val fftMagnitudeThresholdDb: Double,
-    private val fftMagnitudeReleaseThresholdDb: Double
+    fftMagnitudeThresholdDb: Double,
+    fftMagnitudeReleaseThresholdDb: Double
 ) {
     // 20*log10(magnitude / windowSize) < ThresholdDb
     private val fftMagnitudeThreshold = 10.0.pow(fftMagnitudeThresholdDb / 20) * windowSize

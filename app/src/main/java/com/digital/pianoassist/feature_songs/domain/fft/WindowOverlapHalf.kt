@@ -1,4 +1,4 @@
-package com.digital.pianoassist.feature_songs.presentation.recording_screen.fft
+package com.digital.pianoassist.feature_songs.domain.fft
 
 class WindowOverlapHalf(private val reader: WindowReader) : WindowReader {
     override fun iterateWindows(): Sequence<Window> = sequence {
@@ -16,7 +16,7 @@ class WindowOverlapHalf(private val reader: WindowReader) : WindowReader {
                 window.data.copyInto(previousWindow.data, size / 2, 0, size / 2)
                 previousWindow.startSeconds =
                     (previousWindow.startSeconds + window.startSeconds) / 2
-                previousWindow.endSeconds = window.startSeconds;
+                previousWindow.endSeconds = window.startSeconds
                 yield(previousWindow.clone())
 
                 window.data.copyInto(previousWindow.data)

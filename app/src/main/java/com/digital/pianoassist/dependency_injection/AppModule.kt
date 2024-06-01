@@ -1,6 +1,7 @@
 package com.digital.pianoassist.dependency_injection
 
 import android.app.Application
+import android.content.Context
 import androidx.room.Room
 import com.digital.pianoassist.feature_songs.data.data_source.AppDatabase
 import com.digital.pianoassist.feature_songs.data.repository.RecordingRepositoryImpl
@@ -11,6 +12,7 @@ import com.digital.pianoassist.feature_songs.domain.use_cases.AddRecordingUseCas
 import com.digital.pianoassist.feature_songs.domain.use_cases.GetMidiStreamUseCase
 import com.digital.pianoassist.feature_songs.domain.use_cases.GetSongUseCase
 import com.digital.pianoassist.feature_songs.domain.use_cases.GetSongsUseCase
+import com.digital.pianoassist.feature_songs.domain.use_cases.PerformRecordingUseCase
 import com.digital.pianoassist.feature_songs.domain.use_cases.UseCases
 import dagger.Module
 import dagger.Provides
@@ -39,6 +41,12 @@ object AppModule {
 
     @Provides
     @Singleton
+    fun provideContext(app: Application): Context {
+        return app.applicationContext
+    }
+
+    @Provides
+    @Singleton
     fun provideDatabase(app: Application): AppDatabase {
         return Room.databaseBuilder(
             app,
@@ -63,13 +71,15 @@ object AppModule {
     @Singleton
     fun provideUseCases(
         songRepository: SongRepository,
-        recordingRepository: RecordingRepository
+        recordingRepository: RecordingRepository,
+        context: Context
     ): UseCases {
         return UseCases(
             getSongsUseCase = GetSongsUseCase(songRepository),
             addRecordingUseCase = AddRecordingUseCase(songRepository, recordingRepository),
             getSongUseCase = GetSongUseCase(songRepository),
-            getMidiStreamUseCase = GetMidiStreamUseCase(songRepository)
+            getMidiStreamUseCase = GetMidiStreamUseCase(songRepository),
+            performRecordingUseCase = PerformRecordingUseCase(context)
         )
     }
 }

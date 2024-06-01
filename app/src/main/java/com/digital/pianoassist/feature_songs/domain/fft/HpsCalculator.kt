@@ -1,4 +1,4 @@
-package com.digital.pianoassist.feature_songs.presentation.recording_screen.fft
+package com.digital.pianoassist.feature_songs.domain.fft
 
 class HpsCalculator(private val nrHarmonics: Int, private val base: DoubleArray) {
     fun calculate(): DoubleArray {
