@@ -13,6 +13,7 @@ import com.digital.pianoassist.feature_songs.domain.use_cases.GetMidiStreamUseCa
 import com.digital.pianoassist.feature_songs.domain.use_cases.GetSongUseCase
 import com.digital.pianoassist.feature_songs.domain.use_cases.GetSongsUseCase
 import com.digital.pianoassist.feature_songs.domain.use_cases.PerformRecordingUseCase
+import com.digital.pianoassist.feature_songs.domain.use_cases.UpdateMaxScoreUseCase
 import com.digital.pianoassist.feature_songs.domain.use_cases.UseCases
 import dagger.Module
 import dagger.Provides
@@ -79,7 +80,8 @@ object AppModule {
             addRecordingUseCase = AddRecordingUseCase(songRepository, recordingRepository),
             getSongUseCase = GetSongUseCase(songRepository),
             getMidiStreamUseCase = GetMidiStreamUseCase(songRepository),
-            performRecordingUseCase = PerformRecordingUseCase(context)
+            performRecordingUseCase = PerformRecordingUseCase(context),
+            updateMaxScoreUseCase = UpdateMaxScoreUseCase(songRepository)
         )
     }
 }

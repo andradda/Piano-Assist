@@ -6,6 +6,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.digital.pianoassist.feature_songs.domain.model.Song
 import com.digital.pianoassist.feature_songs.domain.use_cases.UseCases
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
@@ -38,6 +39,8 @@ class RecordingScreenViewModel @Inject constructor(
     private var _intermediateScore = mutableDoubleStateOf(0.0)
     val intermediateScore: State<Double> = _intermediateScore
 
+    private var currentSelectedSong: Song? = null
+
 
     init {
         savedStateHandle.get<Int>("songId")?.let { songId ->
@@ -49,6 +52,7 @@ class RecordingScreenViewModel @Inject constructor(
                         // Update the mutable value, so the immutable one will also change and
                         // it will recompose the recording Screen
                         _songTitle.value = song.title
+                        currentSelectedSong = song
                     }
                 }
                 viewModelScope.launch {
@@ -72,16 +76,27 @@ class RecordingScreenViewModel @Inject constructor(
         when (event) {
             is RecordingScreenEvent.StartRecording -> {
                 _isRecordingState.value = !_isRecordingState.value
-                useCases.performRecordingUseCase.startRecording() { intermedScore ->
-                    _intermediateScore.doubleValue = intermedScore
-                    println("Intermediate score received from the UC is $intermedScore")
+                useCases.performRecordingUseCase.startRecording() { intermediateScore ->
+                    _intermediateScore.doubleValue = intermediateScore
+                    println("Intermediate score received from the UC is $intermediateScore")
                 }
             }
 
             is RecordingScreenEvent.StopRecording -> {
                 _isRecordingState.value = !_isRecordingState.value
                 useCases.performRecordingUseCase.stopRecording()
-                useCases.performRecordingUseCase.receiveFinalScore()
+                val finalScore = useCases.performRecordingUseCase.receiveFinalScore()
+                println("finalScore received = $finalScore")
+                viewModelScope.launch {
+                    currentSelectedSong?.let {
+                        println("$finalScore > ${it.maxScore}")
+                        if (finalScore > it.maxScore) {
+                            println("$finalScore > ${it.maxScore}")
+                            useCases.updateMaxScoreUseCase(it, finalScore.toInt())
+                            TODO("PRAGMA wal_autocheckpoint for automatically update in the original database")
+                        }
+                    }
+                }
             }
         }
     }

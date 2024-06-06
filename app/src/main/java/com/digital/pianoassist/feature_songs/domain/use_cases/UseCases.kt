@@ -11,5 +11,6 @@ data class UseCases(
     val getSongUseCase: GetSongUseCase,
     val addRecordingUseCase: AddRecordingUseCase,
     val getMidiStreamUseCase: GetMidiStreamUseCase,
-    val performRecordingUseCase: PerformRecordingUseCase
+    val performRecordingUseCase: PerformRecordingUseCase,
+    val updateMaxScoreUseCase: UpdateMaxScoreUseCase
 )

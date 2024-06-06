@@ -9,6 +9,7 @@ import com.digital.pianoassist.feature_songs.domain.fft.NoteFinder
 import com.digital.pianoassist.feature_songs.domain.fft.Window
 import com.digital.pianoassist.feature_songs.domain.fft.WindowOverlapHalf
 import com.digital.pianoassist.logDebug
+import com.digital.pianoassist.logInformation
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -108,7 +109,7 @@ class PerformRecordingUseCase @Inject constructor(
                 intermediateScoreCallback(last10WindowSum / 10)
             }
         }
-        print("COUNT: $windowCount")
+        println("COUNT: $windowCount")
         finalScore /= midiWindows.size
         println("Final score is $finalScore")
     }
@@ -129,10 +130,12 @@ class PerformRecordingUseCase @Inject constructor(
         }
 
     fun stopRecording() {
+        logInformation("stopRecording() entered")
         androidRecorder.stop()
     }
 
     fun receiveFinalScore(): Double {
+        logInformation("receiveFinalScore() entered")
         return finalScore
     }
 }
