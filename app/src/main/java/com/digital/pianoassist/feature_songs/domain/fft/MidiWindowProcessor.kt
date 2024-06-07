@@ -12,7 +12,8 @@ class MidiWindowProcessor(
         this.windowDuration = windowSize * 1.0 / sampleRate
     }
 
-    fun findMidiNotesInWindows(inputStream: InputStream): MutableList<MutableList<String>> {
+    fun findMidiNotesInWindows(inputStream: InputStream): Pair<List<MidiNote>, MutableList<MutableList<String>>> {
+        val midiNotes = mutableListOf<MidiNote>()
         val midiNoteWindows = mutableListOf<MutableList<String>>()
         var firstNoteStartTime: Double? = null
         var totalNotes = 0
@@ -28,7 +29,7 @@ class MidiWindowProcessor(
                 startSeconds = note.startSeconds - firstNoteStartTime,
                 endSeconds = note.endSeconds - firstNoteStartTime
             )
-
+            midiNotes.add(adjustedNote)
             val firstWindow = (adjustedNote.startSeconds / windowDuration).toInt()
             val lastWindow = (adjustedNote.endSeconds / windowDuration).toInt()
 
@@ -39,6 +40,6 @@ class MidiWindowProcessor(
                 midiNoteWindows[i].add(adjustedNote.note)
             }
         }
-        return midiNoteWindows
+        return Pair(midiNotes, midiNoteWindows)
     }
 }

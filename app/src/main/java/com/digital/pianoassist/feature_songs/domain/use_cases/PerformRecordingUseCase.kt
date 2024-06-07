@@ -4,6 +4,7 @@ import android.content.Context
 import com.digital.pianoassist.feature_songs.domain.components.AndroidAudioRecorder
 import com.digital.pianoassist.feature_songs.domain.fft.FourierTransformer
 import com.digital.pianoassist.feature_songs.domain.fft.HpsCalculator
+import com.digital.pianoassist.feature_songs.domain.fft.MidiNote
 import com.digital.pianoassist.feature_songs.domain.fft.MidiWindowProcessor
 import com.digital.pianoassist.feature_songs.domain.fft.NoteFinder
 import com.digital.pianoassist.feature_songs.domain.fft.Window
@@ -31,12 +32,19 @@ class PerformRecordingUseCase @Inject constructor(
     private lateinit var androidRecorder: AndroidAudioRecorder
 
     private var finalScore: Double = 0.0
-    fun createMidiModel(midiInputStream: InputStream) {
+    fun createMidiModel(midiInputStream: InputStream): List<MidiNote> {
         val midiWindowProcessor = MidiWindowProcessor(windowSize, sampleRate)
-        midiWindows = midiInputStream.let { midiWindowProcessor.findMidiNotesInWindows(it) }
+        val (midiNotes, midiWindows) = midiInputStream.let {
+            midiWindowProcessor.findMidiNotesInWindows(it)
+        }
+        this.midiWindows = midiWindows
+        return midiNotes
     }
 
-    fun startRecording(intermediateScoreCallback: (Double) -> Unit) {
+    fun startRecording(
+        intermediateScoreCallback: (Double) -> Unit,
+        newNotesCallback: (Pair<Window, List<String>>) -> Unit
+    ) {
         androidRecorder = AndroidAudioRecorder(sampleRate, windowSize)
         CoroutineScope(Dispatchers.IO).launch {
             withContext(Dispatchers.IO) {
@@ -45,7 +53,7 @@ class PerformRecordingUseCase @Inject constructor(
             }
             val recorderWindowReader = androidRecorder.getWindowReader()
             midiWindows?.let {
-                performFFT(recorderWindowReader, it, intermediateScoreCallback)
+                performFFT(recorderWindowReader, it, intermediateScoreCallback, newNotesCallback)
             }
         }
     }
@@ -53,7 +61,8 @@ class PerformRecordingUseCase @Inject constructor(
     private fun performFFT(
         recorderWindowReader: WindowOverlapHalf,
         midiWindows: MutableList<MutableList<String>>,
-        intermediateScoreCallback: (Double) -> Unit
+        intermediateScoreCallback: (Double) -> Unit,
+        newNotesCallback: (Pair<Window, List<String>>) -> Unit
     ) {
         val fftTransformer = FourierTransformer()
         val frequencies = FourierTransformer.calculateFrequencies(sampleRate, windowSize)
@@ -89,6 +98,8 @@ class PerformRecordingUseCase @Inject constructor(
                 windowCount++
                 continue
             }
+
+            newNotesCallback(Pair(window, notes))
 
             val uniqueNotes = notes.toSet()
             val midiWindowNotes = midiWindows[windowCount].toSet()

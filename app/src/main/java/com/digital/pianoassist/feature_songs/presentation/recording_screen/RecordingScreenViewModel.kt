@@ -6,10 +6,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.digital.pianoassist.feature_songs.domain.fft.MidiNote
+import com.digital.pianoassist.feature_songs.domain.fft.Window
 import com.digital.pianoassist.feature_songs.domain.model.Song
 import com.digital.pianoassist.feature_songs.domain.use_cases.UseCases
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.io.InputStream
 import javax.inject.Inject
@@ -41,6 +45,12 @@ class RecordingScreenViewModel @Inject constructor(
 
     private var currentSelectedSong: Song? = null
 
+    private val _midiNotes = MutableStateFlow<List<MidiNote>>(emptyList())
+    val midiNotes: StateFlow<List<MidiNote>> = _midiNotes
+
+    private val _newNotes = MutableStateFlow<List<Pair<Window, List<String>>>>(emptyList())
+    val newNotes: StateFlow<List<Pair<Window, List<String>>>> = _newNotes
+
 
     init {
         savedStateHandle.get<Int>("songId")?.let { songId ->
@@ -48,7 +58,6 @@ class RecordingScreenViewModel @Inject constructor(
                 viewModelScope.launch {  // we want to launch a new coroutine to get the song by id
                     useCases.getSongUseCase(songId)?.also { song ->
                         currentSongId = song.id
-
                         // Update the mutable value, so the immutable one will also change and
                         // it will recompose the recording Screen
                         _songTitle.value = song.title
@@ -59,7 +68,8 @@ class RecordingScreenViewModel @Inject constructor(
                     // If a song was clicked, the MIDI file should be already prepared for recording
                     val midiInputStream = getMidiStream(songId)
                     if (midiInputStream != null) {
-                        useCases.performRecordingUseCase.createMidiModel(midiInputStream)
+                        _midiNotes.value =
+                            useCases.performRecordingUseCase.createMidiModel(midiInputStream)
                     }
                 }
             }
@@ -72,14 +82,31 @@ class RecordingScreenViewModel @Inject constructor(
         }.await()
     }
 
+    private fun updateIntermediateScore(score: Double) {
+        viewModelScope.launch {
+            _intermediateScore.doubleValue = score
+        }
+    }
+
+    private fun addNewNotes(window: Window, notes: List<String>) {
+        viewModelScope.launch {
+            _newNotes.value = _newNotes.value + Pair(window, notes)
+        }
+    }
+
     fun onEvent(event: RecordingScreenEvent) {
         when (event) {
             is RecordingScreenEvent.StartRecording -> {
                 _isRecordingState.value = !_isRecordingState.value
-                useCases.performRecordingUseCase.startRecording() { intermediateScore ->
-                    _intermediateScore.doubleValue = intermediateScore
-                    println("Intermediate score received from the UC is $intermediateScore")
-                }
+                useCases.performRecordingUseCase.startRecording(
+                    intermediateScoreCallback = { score ->
+                        updateIntermediateScore(score)
+                        println("Intermediate score received from the UC is $score")
+                    },
+                    newNotesCallback = { (window, notes) ->
+                        addNewNotes(window, notes)
+                    }
+                )
             }
 
             is RecordingScreenEvent.StopRecording -> {
@@ -94,6 +121,7 @@ class RecordingScreenViewModel @Inject constructor(
                             println("$finalScore > ${it.maxScore}")
                             useCases.updateMaxScoreUseCase(it, finalScore.toInt())
                             TODO("PRAGMA wal_autocheckpoint for automatically update in the original database")
+                            TODO("score to double not int")
                         }
                     }
                 }
