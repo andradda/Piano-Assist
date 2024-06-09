@@ -195,13 +195,10 @@ class PianoPlotter(
             val nrNotes = maxNoteIndex - minNoteIndex + 1
             val noteHeight = plot.height() / nrNotes
             val y = y1 - (noteIndex - minNoteIndex) * noteHeight
-            // println("GONNA DRAW $note at y=$y")
             for ((start, end) in occurrences) {
 
                 val startX = start / plotSeconds * plot.width() + x0
                 val endX = end / plotSeconds * plot.width() + x0
-                // canvas.drawCircle(endX.toFloat(), (y - noteHeight / 2).toFloat(), 20f, paint)
-                println("rect $note drawn at startX=$startX endX = $endX startY=${y - noteHeight} endY = $y")
                 canvas.drawRect(
                     (startX).toFloat(),
                     (y - noteHeight).toFloat(),

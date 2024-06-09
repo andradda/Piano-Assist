@@ -94,20 +94,16 @@ class PerformRecordingUseCase @Inject constructor(
                 audioSubtract = window.startSeconds
             }
 
-            if (windowCount >= midiWindows.size) {
-                windowCount++
-                continue
-            }
-
             val shiftedWindow = window.clone()
             shiftedWindow.startSeconds -= audioSubtract
             shiftedWindow.endSeconds -= audioSubtract
 
-            println("fft sent")
+            //println("fft sent")
             newNotesCallback(Pair(shiftedWindow, notes))
 
             val uniqueNotes = notes.toSet()
-            val midiWindowNotes = midiWindows[windowCount].toSet()
+            val midiWindowNotes =
+                if (midiWindows.size > windowCount) midiWindows[windowCount].toSet() else setOf()
             val union = uniqueNotes.union(midiWindowNotes)
             val intersection = uniqueNotes.intersect(midiWindowNotes)
             percentagePerWindow = ((intersection.size * 1.0 / union.size) * 100)

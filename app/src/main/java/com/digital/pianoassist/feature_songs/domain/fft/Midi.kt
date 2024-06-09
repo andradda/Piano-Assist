@@ -63,7 +63,14 @@ fun readMIDI(input: InputStream): Sequence<MidiNote> = sequence {
                     val pressedKey = event.noteValue
                     logInformation("ON key ${Notes.midiToPianoKeyMap[pressedKey]} at tick=${event.tick}  $seconds")
                     val note = Notes.midiToPianoKeyMap[pressedKey]!!
-                    notesStart[note] = seconds
+                    if (event.velocity == 0) {
+                        // Actually NoteOff
+                        yield(MidiNote(note, notesStart[note]!!, seconds))
+                        logInformation("OFF key ${Notes.midiToPianoKeyMap[pressedKey]} at tick=${event.tick} $seconds")
+                    } else {
+                        logInformation("ON key ${Notes.midiToPianoKeyMap[pressedKey]} at tick=${event.tick}  $seconds")
+                        notesStart[note] = seconds
+                    }
                 } else if (event is NoteOff) {
                     val releasedKey = event.noteValue
                     val note = Notes.midiToPianoKeyMap[releasedKey]!!

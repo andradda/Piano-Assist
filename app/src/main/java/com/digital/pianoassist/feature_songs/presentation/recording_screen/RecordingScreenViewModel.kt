@@ -10,6 +10,7 @@ import com.digital.pianoassist.feature_songs.domain.fft.MidiNote
 import com.digital.pianoassist.feature_songs.domain.fft.Window
 import com.digital.pianoassist.feature_songs.domain.model.Song
 import com.digital.pianoassist.feature_songs.domain.use_cases.UseCases
+import com.digital.pianoassist.logDebug
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -47,8 +48,8 @@ class RecordingScreenViewModel @Inject constructor(
 
     private var _currentRecordingTime = mutableDoubleStateOf(0.0)
     val currentRecordingTime: State<Double> = _currentRecordingTime
-    private var _recordingStartTime: Long = 0;
-    private var _recordingTimer: Timer? = null;
+    private var _recordingStartTime: Long = 0
+    private var _recordingTimer: Timer? = null
 
     private var currentSelectedSong: Song? = null
 
@@ -126,6 +127,11 @@ class RecordingScreenViewModel @Inject constructor(
                         println("Intermediate score received from the UC is $score")
                     },
                     newNotesCallback = { (window, notes) ->
+                        logDebug(
+                            "newNotesCallback " + window.startSeconds + " " + notes.joinToString(
+                                ","
+                            )
+                        )
                         addNewNotes(window, notes)
                     }
                 )
