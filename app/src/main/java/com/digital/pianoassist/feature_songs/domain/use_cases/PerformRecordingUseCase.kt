@@ -99,7 +99,12 @@ class PerformRecordingUseCase @Inject constructor(
                 continue
             }
 
-            newNotesCallback(Pair(window, notes))
+            val shiftedWindow = window.clone()
+            shiftedWindow.startSeconds -= audioSubtract
+            shiftedWindow.endSeconds -= audioSubtract
+
+            println("fft sent")
+            newNotesCallback(Pair(shiftedWindow, notes))
 
             val uniqueNotes = notes.toSet()
             val midiWindowNotes = midiWindows[windowCount].toSet()

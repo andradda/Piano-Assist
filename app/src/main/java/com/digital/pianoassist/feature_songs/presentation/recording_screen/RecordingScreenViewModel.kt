@@ -16,7 +16,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.io.InputStream
+import java.util.Timer
 import javax.inject.Inject
+import kotlin.concurrent.timerTask
 
 @HiltViewModel
 class RecordingScreenViewModel @Inject constructor(
@@ -43,13 +45,21 @@ class RecordingScreenViewModel @Inject constructor(
     private var _intermediateScore = mutableDoubleStateOf(0.0)
     val intermediateScore: State<Double> = _intermediateScore
 
+    private var _currentRecordingTime = mutableDoubleStateOf(0.0)
+    val currentRecordingTime: State<Double> = _currentRecordingTime
+    private var _recordingStartTime: Long = 0;
+    private var _recordingTimer: Timer? = null;
+
     private var currentSelectedSong: Song? = null
 
     private val _midiNotes = MutableStateFlow<List<MidiNote>>(emptyList())
     val midiNotes: StateFlow<List<MidiNote>> = _midiNotes
 
-    private val _newNotes = MutableStateFlow<List<Pair<Window, List<String>>>>(emptyList())
-    val newNotes: StateFlow<List<Pair<Window, List<String>>>> = _newNotes
+//    private val _newNotes = MutableStateFlow<List<Pair<Window, List<String>>>>(emptyList())
+//    val newNotes: StateFlow<List<Pair<Window, List<String>>>> = _newNotes
+
+    private val _newNotes = MutableStateFlow<Pair<Window, List<String>>?>(null)
+    val newNotes: StateFlow<Pair<Window, List<String>>?> = _newNotes
 
 
     init {
@@ -90,7 +100,19 @@ class RecordingScreenViewModel @Inject constructor(
 
     private fun addNewNotes(window: Window, notes: List<String>) {
         viewModelScope.launch {
-            _newNotes.value = _newNotes.value + Pair(window, notes)
+            // _newNotes.value = _newNotes.value + Pair(window, notes)
+            _newNotes.value = Pair(window, notes)
+        }
+        if (_recordingTimer == null) {
+            //_currentRecordingTime.doubleValue = 12.0
+            _recordingStartTime = System.currentTimeMillis()
+            _recordingTimer = Timer()
+            _recordingTimer!!.scheduleAtFixedRate(timerTask {
+                viewModelScope.launch {
+                    _currentRecordingTime.doubleValue =
+                        (System.currentTimeMillis() - _recordingStartTime) / 1000.0
+                }
+            }, 0, 200)
         }
     }
 
@@ -110,7 +132,9 @@ class RecordingScreenViewModel @Inject constructor(
             }
 
             is RecordingScreenEvent.StopRecording -> {
+                _recordingTimer?.cancel()
                 _isRecordingState.value = !_isRecordingState.value
+                // _newNotes.value = null // Reset newNotes to null
                 useCases.performRecordingUseCase.stopRecording()
                 val finalScore = useCases.performRecordingUseCase.receiveFinalScore()
                 println("finalScore received = $finalScore")
@@ -120,8 +144,8 @@ class RecordingScreenViewModel @Inject constructor(
                         if (finalScore > it.maxScore) {
                             println("$finalScore > ${it.maxScore}")
                             useCases.updateMaxScoreUseCase(it, finalScore.toInt())
-                            TODO("PRAGMA wal_autocheckpoint for automatically update in the original database")
-                            TODO("score to double not int")
+                            // TODO("PRAGMA wal_autocheckpoint for automatically update in the original database")
+                            // TODO("score to double not int")
                         }
                     }
                 }

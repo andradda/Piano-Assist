@@ -2,33 +2,25 @@ package com.digital.pianoassist.feature_songs.presentation.recording_screen
 
 import android.annotation.SuppressLint
 import android.content.pm.PackageManager
-import android.graphics.Paint
+import android.graphics.Bitmap
+import android.graphics.Rect
 import android.graphics.Typeface
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material3.Button
+import androidx.compose.material3.*
 import androidx.compose.material3.ButtonDefaults.buttonColors
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -44,6 +36,7 @@ import com.digital.pianoassist.feature_songs.domain.fft.Window
 import com.digital.pianoassist.feature_songs.presentation.recording_screen.components.MyCircularProgressIndicator
 import com.digital.pianoassist.feature_songs.presentation.recording_screen.components.PianoPlotter
 import com.digital.pianoassist.logDebug
+import kotlin.math.max
 
 @OptIn(ExperimentalMaterial3Api::class)
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
@@ -57,6 +50,7 @@ fun RecordingScreen(
 
     val isRecordingState = viewModel.isRecordingState.value
     val intermediateScore = viewModel.intermediateScore.value
+    val currentRecordingTime = viewModel.currentRecordingTime.value
 
     val midiNotes by viewModel.midiNotes.collectAsState()
     val newNotes by viewModel.newNotes.collectAsState()
@@ -119,7 +113,7 @@ fun RecordingScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 if (midiNotes.isNotEmpty()) {
-                    PianoPlotView(midiNotes, newNotes)
+                    PianoPlotView(midiNotes, newNotes, currentRecordingTime)
                 } else {
                     MyCircularProgressIndicator()
                 }
@@ -129,7 +123,8 @@ fun RecordingScreen(
                     .fillMaxWidth()
                     .background(Color.Magenta)
             ) {
-                Text(text = intermediateScore.toString())
+                val formattedScore = String.format("%.2f", intermediateScore)
+                Text(text = "Time: ${currentRecordingTime}s, Intermediate score: $formattedScore")
             }
             Column(
                 modifier = Modifier
@@ -176,40 +171,78 @@ fun RecordingScreen(
     }
 }
 
-@Composable
-fun PianoPlotView(notes: List<MidiNote>, newNotes: List<Pair<Window, List<String>>>) {
-    val typeface = remember { Typeface.create(Typeface.DEFAULT, Typeface.NORMAL) }
-    val pianoPlotter = remember { PianoPlotter(1200, 800, typeface) }
+class PianoPlotViewState {
+    val typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
+    var midiBitmap: Bitmap? = null
 
-    notes.forEach { pianoPlotter.add(it) }
+    // var midiBitmap: Bitmap? by mutableStateOf(null)
+    var rect: Rect? = null
+}
+
+@Composable
+fun PianoPlotView(
+    midiNotes: List<MidiNote>,
+    newNotes: Pair<Window, List<String>>?,
+    currentRecordingTime: Double
+) {
+    val state = remember { PianoPlotViewState() }
+    val pixelsPerSecond = 200
+    val paddingLeft = 50
+    val paddingRight = 50
+    var pianoPlotter by remember { mutableStateOf<PianoPlotter?>(null) }
 
     // Draw new notes in a different color
     Canvas(modifier = Modifier.fillMaxSize()) {
-        pianoPlotter.draw(drawContext.canvas.nativeCanvas)
-        val paint = Paint().apply {
-            color = Color.Blue.hashCode() // Use blue for new notes
-            style = Paint.Style.FILL
-        }
-        newNotes.forEach { (window, notes) ->
-            notes.forEach { note ->
-                val index = pianoPlotter.noteIndexMap[note] ?: 0
-                val nrNotes = pianoPlotter.maxNoteIndex - pianoPlotter.minNoteIndex + 1
-                val noteHeight = pianoPlotter.plot.height() / nrNotes
-                val y = pianoPlotter.y1 - (index - pianoPlotter.minNoteIndex) * noteHeight
-                val startX =
-                    window.startSeconds / pianoPlotter.plotSeconds * pianoPlotter.plot.width() + pianoPlotter.x0
-                val endX =
-                    window.endSeconds / pianoPlotter.plotSeconds * pianoPlotter.plot.width() + pianoPlotter.x0
+        logDebug("Drawing canvas of size " + drawContext.size.toString())
 
-                drawContext.canvas.nativeCanvas.drawRect(
-                    startX.toFloat(),
-                    (y - noteHeight).toFloat(),
-                    endX.toFloat(),
-                    y.toFloat(),
-                    paint
-                )
-            }
+        if (state.midiBitmap == null) {
+            val plotSeconds = 30.0
+            val width = (plotSeconds * pixelsPerSecond + paddingLeft + paddingRight).toInt()
+            val height = drawContext.size.height
+            state.rect = Rect(
+                paddingLeft,
+                (height * 0.05).toInt(),
+                width - paddingRight,
+                (height * 0.95).toInt()
+            )
+            state.midiBitmap =
+                Bitmap.createBitmap(width, height.toInt(), Bitmap.Config.ARGB_8888)
+            pianoPlotter =
+                PianoPlotter(state.midiBitmap!!, state.rect!!, state.typeface, plotSeconds)
+            midiNotes.forEach { pianoPlotter!!.add(it) }
+            pianoPlotter!!.drawMidiPlot()
         }
+        // TODO: Add newNotes to the bitmap ; Careful about limits
+        if (newNotes != null) {
+            val outOfRangeNotes = pianoPlotter?.add(newNotes.first, newNotes.second)
+            pianoPlotter?.drawFFTNotes()
+        }
+
+        // Draw once for left axis
+        drawContext.canvas.nativeCanvas.drawBitmap(state.midiBitmap!!, 0f, 0f, null)
+        // Draw again for the actual plot
+
+        val scrollPixels = (max(0.0, currentRecordingTime - 2.5) * pixelsPerSecond).toInt()
+        drawContext.canvas.nativeCanvas.drawBitmap(
+            state.midiBitmap!!,
+            Rect(
+                paddingLeft + scrollPixels,
+                0,
+                Math.min(
+                    scrollPixels + drawContext.size.width.toInt(),
+                    state.midiBitmap!!.width
+                ),
+                state.midiBitmap!!.height
+            ),
+            Rect(
+                paddingLeft,
+                0,
+                drawContext.size.width.toInt(),
+                drawContext.size.height.toInt()
+            ),
+            null
+        )
+
     }
 }
 

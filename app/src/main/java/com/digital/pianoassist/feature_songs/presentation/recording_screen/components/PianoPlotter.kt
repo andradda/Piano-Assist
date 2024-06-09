@@ -9,53 +9,59 @@ import android.graphics.Typeface
 import com.digital.pianoassist.feature_songs.domain.fft.MidiNote
 import com.digital.pianoassist.feature_songs.domain.fft.Notes
 import com.digital.pianoassist.feature_songs.domain.fft.Window
+import com.digital.pianoassist.logInformation
 import kotlin.math.max
 import kotlin.math.min
 
-class PianoPlotter(private val width: Int, private val height: Int, private val font: Typeface) {
-    private val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-    private val canvas = Canvas(bitmap)
-    val x0 = (width * 0.05).toInt()
-    private val y0 = (height * 0.05).toInt()
-    private val x1 = (width * 0.95).toInt()
-    val y1 = (height * 0.95).toInt()
-    val plot = Rect(x0, y0, x1, y1)
-    var plotSeconds = 0
-    private val noteIndexes = ArrayList<String>()
-    val noteIndexMap = HashMap<String, Int>()
-    var minNoteIndex = Notes.pianoKeysMap.size
-    var maxNoteIndex = 0
-    private val previousNotes = HashSet<String>()
-    private val noteOccurrences = HashMap<String, ArrayList<Pair<Double, Double>>>()
+class PianoPlotter(
+    private val bitmap: Bitmap,
+    private val plot: Rect,
+    private val font: Typeface,
+    private val plotSeconds: Double
+) {
+    private val width = bitmap.width
+    private val height = bitmap.height
+    private val x0 = plot.left
+    private val y0 = plot.top
+    private val x1 = plot.right
+    private val y1 = plot.bottom
 
-    var maxSeconds = 0.0
+    private val noteIndexes = ArrayList<String>()
+    private val noteIndexMap = HashMap<String, Int>()
+    private var minNoteIndex = Notes.pianoKeysMap.size
+    private var maxNoteIndex = 0
+    private val previousNotes = HashSet<String>()
+    private val midiNoteOccurrences = HashMap<String, ArrayList<Pair<Double, Double>>>()
+    private val fftNoteOccurrences = HashMap<String, ArrayList<Pair<Double, Double>>>()
 
     init {
-        val paint = Paint().apply {
-            typeface = font
-            color = Color.WHITE
-            isAntiAlias = true
-        }
-
-        canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), paint)
-
         for ((note, _) in Notes.pianoKeysMap.asSequence().sortedBy { it.value }) {
             noteIndexMap[note] = noteIndexes.size
             noteIndexes.add(note)
         }
     }
 
-    fun add(window: Window, notes: List<String>) {
-        maxSeconds = max(maxSeconds, window.endSeconds)
+    /*
+    This function draws over the bitmap the new notes from the piano performance
+    taking into account the range established by the midi notes on the bitmap
+     */
+    fun add(window: Window, notes: List<String>): ArrayList<String> {
+        logInformation("add fftNotes entered")
+        val notesOutsideOfRange = ArrayList<String>()
         for (note in notes) {
             val index = noteIndexMap[note] ?: 0
-            minNoteIndex = min(minNoteIndex, index)
-            maxNoteIndex = max(maxNoteIndex, index)
 
-            if (!noteOccurrences.containsKey(note)) {
-                noteOccurrences[note] = ArrayList()
+            // TODO("send the notesOutsideOfRange to the screen to display them in the TextField")
+            if (index < minNoteIndex || index > maxNoteIndex) {
+                // The note is outside of the visible range of the screen
+                notesOutsideOfRange.add(note)
+                continue
             }
-            val occurrencesList = noteOccurrences[note]!!
+
+            if (!fftNoteOccurrences.containsKey(note)) {
+                fftNoteOccurrences[note] = ArrayList()
+            }
+            val occurrencesList = fftNoteOccurrences[note]!!
             if (!previousNotes.contains(note)) {
                 previousNotes.add(note)
                 occurrencesList.add(Pair(window.startSeconds, window.endSeconds))
@@ -65,49 +71,63 @@ class PianoPlotter(private val width: Int, private val height: Int, private val 
             }
         }
         previousNotes.removeAll { note -> !notes.contains(note) }
+        return notesOutsideOfRange
     }
 
     fun add(note: MidiNote) {
-        maxSeconds = max(maxSeconds, note.endSeconds)
         val index = noteIndexMap[note.note] ?: 0
         minNoteIndex = min(minNoteIndex, index)
         maxNoteIndex = max(maxNoteIndex, index)
 
-        if (!noteOccurrences.containsKey(note.note)) {
-            noteOccurrences[note.note] = ArrayList()
+        if (!midiNoteOccurrences.containsKey(note.note)) {
+            midiNoteOccurrences[note.note] = ArrayList()
         }
-        val occurrencesList = noteOccurrences[note.note]!!
+        val occurrencesList = midiNoteOccurrences[note.note]!!
         occurrencesList.add(Pair(note.startSeconds, note.endSeconds))
     }
 
-    fun draw(canvas: Canvas) {
+    fun drawMidiPlot() {
+        val canvas = Canvas(bitmap)
+        val paint = Paint().apply {
+            typeface = font
+            color = Color.WHITE
+            isAntiAlias = true
+        }
+        canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), paint)
         canvas.drawBitmap(bitmap, 0f, 0f, null)
         plotAxis(canvas)
-        plotNotes(canvas)
+        plotMidiNotes(canvas)
     }
 
-    private fun plotAxis(canvas: Canvas) {
+
+    private fun plotAxis(canvas: Canvas) { // Drawing axes an labels for time and notes
         val paint = Paint().apply {
             color = Color.BLACK
             strokeWidth = 1f
             style = Paint.Style.STROKE
             isAntiAlias = true
         }
+
+        val textPaint = Paint().apply {
+            color = Color.BLACK
+            textSize = 29f // Increase this value to make the font larger
+            style = Paint.Style.FILL
+            isAntiAlias = true
+        }
+
         val fontY = (height * 0.985).toInt()
 
-        plotSeconds = maxSeconds.toInt() + 1
-        for (i in 0 until (plotSeconds + 1)) {
+        for (i in 0 until (plotSeconds + 1).toInt()) {
             val x = x0 + plot.width() * i / plotSeconds
-            canvas.drawLine(
-                x.toFloat(),
-                y1.toFloat(),
-                x.toFloat(),
-                (y1 + height * 0.01).toFloat(),
-                paint
+            canvas.drawLine( // Draw vertical line for the time
+                x.toFloat(), y1.toFloat(), x.toFloat(), (y1 + height * 0.01).toFloat(), paint
             )
+
+
+            // Place the time labels
             val bounds = Rect()
-            paint.getTextBounds("$i", 0, "$i".length, bounds)
-            canvas.drawText("$i", (x - bounds.width() / 2).toFloat(), fontY.toFloat(), paint)
+            textPaint.getTextBounds("$i", 0, "$i".length, bounds)
+            canvas.drawText("$i", (x - bounds.width() / 2).toFloat(), fontY.toFloat(), textPaint)
 
             val g2 = Paint().apply {
                 color = Color.GRAY
@@ -118,29 +138,29 @@ class PianoPlotter(private val width: Int, private val height: Int, private val 
         val nrNotes = maxNoteIndex - minNoteIndex + 1
         for (i in 0 until nrNotes) {
             val noteHeight = plot.height() / nrNotes
-            val y = y1 - i * noteHeight
+            val y = y1 - i * noteHeight // Calculate y-coordinate for each horizontal line
             canvas.drawLine(x0.toFloat(), y.toFloat(), x1.toFloat(), y.toFloat(), paint)
             val note = noteIndexes[i + minNoteIndex]
 
             val bounds = Rect()
-            paint.getTextBounds(note, 0, note.length, bounds)
+            textPaint.getTextBounds(note, 0, note.length, bounds)
             canvas.drawText(
                 note,
                 (x0 / 2 - bounds.width() / 2).toFloat(),
                 (y - noteHeight / 2 + bounds.height() / 2).toFloat(),
-                paint
+                textPaint
             )
         }
 
-        canvas.drawRect(Rect(x0, y0, x1, y1), paint)
+        canvas.drawRect(Rect(x0, y0, x1, y1), paint) // Draw the outer rectangle (margins)
     }
 
-    private fun plotNotes(canvas: Canvas) {
+    private fun plotMidiNotes(canvas: Canvas) {
         val paint = Paint().apply {
             color = Color.rgb(192, 0, 0)
             style = Paint.Style.FILL
         }
-        for ((note, occurrences) in noteOccurrences) {
+        for ((note, occurrences) in midiNoteOccurrences) {
             val noteIndex = noteIndexMap[note] ?: 0
             val nrNotes = maxNoteIndex - minNoteIndex + 1
             val noteHeight = plot.height() / nrNotes
@@ -151,9 +171,41 @@ class PianoPlotter(private val width: Int, private val height: Int, private val 
                 val endX = end / plotSeconds * plot.width() + x0
 
                 canvas.drawRect(
-                    startX.toFloat(),
+                    startX.toFloat(), (y - noteHeight).toFloat(), endX.toFloat(), y.toFloat(), paint
+                )
+            }
+        }
+    }
+
+    fun drawFFTNotes() {
+        logInformation("drawFFTNotes() entered")
+        val canvas = Canvas(bitmap)
+        plotFFTNotes(canvas)
+    }
+
+    private fun plotFFTNotes(canvas: Canvas) {
+        logInformation("plotFFTNotes entered")
+        val paint = Paint().apply {
+            color = Color.argb(200, 137, 196, 244)
+            // color = Color.BLUE
+            style = Paint.Style.FILL
+        }
+        for ((note, occurrences) in fftNoteOccurrences) {
+            val noteIndex = noteIndexMap[note] ?: 0
+            val nrNotes = maxNoteIndex - minNoteIndex + 1
+            val noteHeight = plot.height() / nrNotes
+            val y = y1 - (noteIndex - minNoteIndex) * noteHeight
+            // println("GONNA DRAW $note at y=$y")
+            for ((start, end) in occurrences) {
+
+                val startX = start / plotSeconds * plot.width() + x0
+                val endX = end / plotSeconds * plot.width() + x0
+                // canvas.drawCircle(endX.toFloat(), (y - noteHeight / 2).toFloat(), 20f, paint)
+                println("rect $note drawn at startX=$startX endX = $endX startY=${y - noteHeight} endY = $y")
+                canvas.drawRect(
+                    (startX).toFloat(),
                     (y - noteHeight).toFloat(),
-                    endX.toFloat(),
+                    (endX).toFloat(),
                     y.toFloat(),
                     paint
                 )
