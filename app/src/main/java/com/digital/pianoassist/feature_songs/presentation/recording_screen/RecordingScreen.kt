@@ -23,7 +23,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.platform.LocalContext
@@ -35,6 +34,7 @@ import com.digital.pianoassist.feature_songs.domain.fft.MidiNote
 import com.digital.pianoassist.feature_songs.domain.fft.Window
 import com.digital.pianoassist.feature_songs.presentation.recording_screen.components.MyCircularProgressIndicator
 import com.digital.pianoassist.feature_songs.presentation.recording_screen.components.PianoPlotter
+import com.digital.pianoassist.feature_songs.presentation.recording_screen.components.ScoreCircle
 import com.digital.pianoassist.logDebug
 import kotlin.math.max
 
@@ -83,7 +83,10 @@ fun RecordingScreen(
                             contentDescription = "Back"
                         )
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color(0xFFC0A483)
+                )
             )
         }
     ) {
@@ -91,11 +94,7 @@ fun RecordingScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(top = it.calculateTopPadding())
-                .background(
-                    brush = Brush.linearGradient(
-                        colors = listOf(Color.Gray, Color.White)
-                    )
-                )
+                .background(Color(0xFFE7C49C))
         ) {
             Column(
                 modifier = Modifier
@@ -121,10 +120,10 @@ fun RecordingScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color.Magenta)
+                    .background(Color(0xFFE7C49C))
             ) {
-                val formattedScore = String.format("%.2f", intermediateScore)
-                Text(text = "Time: ${currentRecordingTime}s, Intermediate score: $formattedScore")
+                //Text(text = "Intermediate score: $intermediateScore")
+                ScoreCircle(score = intermediateScore)
             }
             Column(
                 modifier = Modifier
@@ -159,7 +158,9 @@ fun RecordingScreen(
                         }
 
                     },
-                    colors = buttonColors(containerColor = if (isRecordingState) Color.Red else Color.DarkGray)
+                    colors = buttonColors(
+                        containerColor = if (isRecordingState) Color.Red else Color(0xFF284675)
+                    )
                 ) {
                     Text(
                         text = if (isRecordingState) "Stop recording" else "Start recording",
@@ -174,8 +175,6 @@ fun RecordingScreen(
 class PianoPlotViewState {
     val typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
     var midiBitmap: Bitmap? = null
-
-    // var midiBitmap: Bitmap? by mutableStateOf(null)
     var rect: Rect? = null
 }
 

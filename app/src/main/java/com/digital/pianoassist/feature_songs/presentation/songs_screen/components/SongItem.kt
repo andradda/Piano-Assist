@@ -65,7 +65,7 @@ fun SongItem(
                 // what we draw in here it will make sure that out content is inside out path
                 // so what we draw outside of the path will just be cut off (for eq the corner)
                 drawRoundRect(
-                    color = Color.Cyan,
+                    color = Color(0xFFF98866),
                     size = size,
                     cornerRadius = CornerRadius(cornerRadius.toPx())
                 )
@@ -74,7 +74,11 @@ fun SongItem(
                 // we blend out rectangle color with black
                 drawRoundRect(
                     color = Color(
-                        ColorUtils.blendARGB(Color.Cyan.toArgb(), Color.Black.toArgb(), 0.2f)
+                        ColorUtils.blendARGB(
+                            Color(0xFFF98866).toArgb(),
+                            Color.Black.toArgb(),
+                            0.2f
+                        )
                     ),
                     topLeft = Offset(size.width - cutCornerSize.toPx(), -100f),
                     size = Size(cutCornerSize.toPx() + 100f, cutCornerSize.toPx() + 100f),
@@ -90,7 +94,7 @@ fun SongItem(
         ) {
             Text(
                 text = song.title,
-                style = MaterialTheme.typography.headlineLarge,
+                style = MaterialTheme.typography.headlineSmall,
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1, // so we have just 1 line for the title
                 overflow = TextOverflow.Ellipsis // so it is cut off when it gets too long
@@ -98,7 +102,7 @@ fun SongItem(
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = song.composer,
-                style = MaterialTheme.typography.headlineMedium,
+                style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis

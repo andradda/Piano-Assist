@@ -12,6 +12,7 @@ import com.digital.pianoassist.feature_songs.domain.model.Song
 import com.digital.pianoassist.feature_songs.domain.use_cases.UseCases
 import com.digital.pianoassist.logDebug
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -56,11 +57,11 @@ class RecordingScreenViewModel @Inject constructor(
     private val _midiNotes = MutableStateFlow<List<MidiNote>>(emptyList())
     val midiNotes: StateFlow<List<MidiNote>> = _midiNotes
 
-//    private val _newNotes = MutableStateFlow<List<Pair<Window, List<String>>>>(emptyList())
-//    val newNotes: StateFlow<List<Pair<Window, List<String>>>> = _newNotes
-
     private val _newNotes = MutableStateFlow<Pair<Window, List<String>>?>(null)
     val newNotes: StateFlow<Pair<Window, List<String>>?> = _newNotes
+
+    // CompletableDeferred is the equivalent of a Future/Promise in Kotlin
+    private var recordingComplete: CompletableDeferred<Unit>? = null
 
 
     init {
@@ -101,11 +102,9 @@ class RecordingScreenViewModel @Inject constructor(
 
     private fun addNewNotes(window: Window, notes: List<String>) {
         viewModelScope.launch {
-            // _newNotes.value = _newNotes.value + Pair(window, notes)
             _newNotes.value = Pair(window, notes)
         }
         if (_recordingTimer == null) {
-            //_currentRecordingTime.doubleValue = 12.0
             _recordingStartTime = System.currentTimeMillis()
             _recordingTimer = Timer()
             _recordingTimer!!.scheduleAtFixedRate(timerTask {
@@ -121,6 +120,7 @@ class RecordingScreenViewModel @Inject constructor(
         when (event) {
             is RecordingScreenEvent.StartRecording -> {
                 _isRecordingState.value = !_isRecordingState.value
+                recordingComplete = CompletableDeferred<Unit>()
                 useCases.performRecordingUseCase.startRecording(
                     intermediateScoreCallback = { score ->
                         updateIntermediateScore(score)
@@ -133,25 +133,26 @@ class RecordingScreenViewModel @Inject constructor(
                             )
                         )
                         addNewNotes(window, notes)
-                    }
+                    },
+                    recordingComplete = recordingComplete!!
                 )
             }
 
             is RecordingScreenEvent.StopRecording -> {
                 _recordingTimer?.cancel()
                 _isRecordingState.value = !_isRecordingState.value
-                // _newNotes.value = null // Reset newNotes to null
+                // _newNotes.value = null
                 useCases.performRecordingUseCase.stopRecording()
-                val finalScore = useCases.performRecordingUseCase.receiveFinalScore()
-                println("finalScore received = $finalScore")
                 viewModelScope.launch {
+                    recordingComplete?.await() // Wait for recording to complete so you can call the receiveScore function
+                    val finalScore = useCases.performRecordingUseCase.receiveFinalScore()
+                    println("finalScore received = $finalScore")
                     currentSelectedSong?.let {
                         println("$finalScore > ${it.maxScore}")
                         if (finalScore > it.maxScore) {
-                            println("$finalScore > ${it.maxScore}")
+                            logDebug("$finalScore > ${it.maxScore}")
                             useCases.updateMaxScoreUseCase(it, finalScore.toInt())
                             // TODO("PRAGMA wal_autocheckpoint for automatically update in the original database")
-                            // TODO("score to double not int")
                         }
                     }
                 }

@@ -90,7 +90,7 @@ class PianoPlotter(
         val canvas = Canvas(bitmap)
         val paint = Paint().apply {
             typeface = font
-            color = Color.WHITE
+            color = Color.parseColor("#F1D3B2")
             isAntiAlias = true
         }
         canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), paint)
@@ -157,7 +157,7 @@ class PianoPlotter(
 
     private fun plotMidiNotes(canvas: Canvas) {
         val paint = Paint().apply {
-            color = Color.rgb(192, 0, 0)
+            color = Color.parseColor("#A42A04")// #A43820
             style = Paint.Style.FILL
         }
         for ((note, occurrences) in midiNoteOccurrences) {
@@ -178,16 +178,13 @@ class PianoPlotter(
     }
 
     fun drawFFTNotes() {
-        logInformation("drawFFTNotes() entered")
         val canvas = Canvas(bitmap)
         plotFFTNotes(canvas)
     }
 
     private fun plotFFTNotes(canvas: Canvas) {
-        logInformation("plotFFTNotes entered")
         val paint = Paint().apply {
-            color = Color.argb(200, 137, 196, 244)
-            // color = Color.BLUE
+            color = Color.argb(40, 137, 196, 244)
             style = Paint.Style.FILL
         }
         for ((note, occurrences) in fftNoteOccurrences) {

@@ -9,9 +9,11 @@ import com.digital.pianoassist.feature_songs.domain.fft.MidiWindowProcessor
 import com.digital.pianoassist.feature_songs.domain.fft.NoteFinder
 import com.digital.pianoassist.feature_songs.domain.fft.Window
 import com.digital.pianoassist.feature_songs.domain.fft.WindowOverlapHalf
+import com.digital.pianoassist.feature_songs.domain.util.roundToDecimals
 import com.digital.pianoassist.logDebug
 import com.digital.pianoassist.logInformation
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -43,7 +45,8 @@ class PerformRecordingUseCase @Inject constructor(
 
     fun startRecording(
         intermediateScoreCallback: (Double) -> Unit,
-        newNotesCallback: (Pair<Window, List<String>>) -> Unit
+        newNotesCallback: (Pair<Window, List<String>>) -> Unit,
+        recordingComplete: CompletableDeferred<Unit>
     ) {
         androidRecorder = AndroidAudioRecorder(sampleRate, windowSize)
         CoroutineScope(Dispatchers.IO).launch {
@@ -55,6 +58,7 @@ class PerformRecordingUseCase @Inject constructor(
             midiWindows?.let {
                 performFFT(recorderWindowReader, it, intermediateScoreCallback, newNotesCallback)
             }
+            recordingComplete.complete(Unit) // Signal that the recording is complete
         }
     }
 
@@ -98,7 +102,6 @@ class PerformRecordingUseCase @Inject constructor(
             shiftedWindow.startSeconds -= audioSubtract
             shiftedWindow.endSeconds -= audioSubtract
 
-            //println("fft sent")
             newNotesCallback(Pair(shiftedWindow, notes))
 
             val uniqueNotes = notes.toSet()
@@ -106,7 +109,13 @@ class PerformRecordingUseCase @Inject constructor(
                 if (midiWindows.size > windowCount) midiWindows[windowCount].toSet() else setOf()
             val union = uniqueNotes.union(midiWindowNotes)
             val intersection = uniqueNotes.intersect(midiWindowNotes)
-            percentagePerWindow = ((intersection.size * 1.0 / union.size) * 100)
+            logDebug("union: $union and intersection: $intersection")
+
+            percentagePerWindow = if (union.isNotEmpty()) {
+                ((intersection.size * 1.0 / union.size) * 100)
+            } else {
+                0.0
+            }
             finalScore += percentagePerWindow
 
             last10WindowAverages.addLast(percentagePerWindow)
@@ -117,13 +126,12 @@ class PerformRecordingUseCase @Inject constructor(
             }
             windowCount++
             if (windowCount % 22 == 0) {
-                println("Intermediate score: ${last10WindowSum / 10}")
-                intermediateScoreCallback(last10WindowSum / 10)
+                logDebug("Intermediate score: ${roundToDecimals(last10WindowSum / 10, 2)}")
+                intermediateScoreCallback(roundToDecimals(last10WindowSum / 10, 2))
             }
         }
-        println("COUNT: $windowCount")
         finalScore /= midiWindows.size
-        println("Final score is $finalScore")
+        logDebug("Final score is ${roundToDecimals(finalScore, 2)}")
     }
 
     private fun eliminateNotesInSingleWindow(windowNotes: Sequence<Pair<Window, List<String>>>): Sequence<Pair<Window, List<String>>> =
@@ -148,6 +156,6 @@ class PerformRecordingUseCase @Inject constructor(
 
     fun receiveFinalScore(): Double {
         logInformation("receiveFinalScore() entered")
-        return finalScore
+        return roundToDecimals(finalScore, 2)
     }
 }
