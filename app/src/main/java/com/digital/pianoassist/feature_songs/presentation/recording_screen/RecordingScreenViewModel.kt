@@ -47,6 +47,9 @@ class RecordingScreenViewModel @Inject constructor(
     private var _intermediateScore = mutableDoubleStateOf(0.0)
     val intermediateScore: State<Double> = _intermediateScore
 
+    private var _finalScore = mutableDoubleStateOf(0.0)
+    val finalScore: State<Double> = _finalScore
+
     private var _currentRecordingTime = mutableDoubleStateOf(0.0)
     val currentRecordingTime: State<Double> = _currentRecordingTime
     private var _recordingStartTime: Long = 0
@@ -141,17 +144,17 @@ class RecordingScreenViewModel @Inject constructor(
             is RecordingScreenEvent.StopRecording -> {
                 _recordingTimer?.cancel()
                 _isRecordingState.value = !_isRecordingState.value
-                // _newNotes.value = null
                 useCases.performRecordingUseCase.stopRecording()
+                _midiNotes.value = emptyList()
                 viewModelScope.launch {
                     recordingComplete?.await() // Wait for recording to complete so you can call the receiveScore function
-                    val finalScore = useCases.performRecordingUseCase.receiveFinalScore()
+                    _finalScore.doubleValue = useCases.performRecordingUseCase.receiveFinalScore()
                     println("finalScore received = $finalScore")
                     currentSelectedSong?.let {
                         println("$finalScore > ${it.maxScore}")
-                        if (finalScore > it.maxScore) {
+                        if (_finalScore.doubleValue > it.maxScore) {
                             logDebug("$finalScore > ${it.maxScore}")
-                            useCases.updateMaxScoreUseCase(it, finalScore.toInt())
+                            useCases.updateMaxScoreUseCase(it, _finalScore.doubleValue.toInt())
                             // TODO("PRAGMA wal_autocheckpoint for automatically update in the original database")
                         }
                     }

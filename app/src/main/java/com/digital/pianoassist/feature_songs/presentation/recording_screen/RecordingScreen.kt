@@ -32,7 +32,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.digital.pianoassist.feature_songs.domain.fft.MidiNote
 import com.digital.pianoassist.feature_songs.domain.fft.Window
-import com.digital.pianoassist.feature_songs.presentation.recording_screen.components.MyCircularProgressIndicator
+import com.digital.pianoassist.feature_songs.presentation.recording_screen.components.FinalScoreView
 import com.digital.pianoassist.feature_songs.presentation.recording_screen.components.PianoPlotter
 import com.digital.pianoassist.feature_songs.presentation.recording_screen.components.ScoreCircle
 import com.digital.pianoassist.logDebug
@@ -49,6 +49,7 @@ fun RecordingScreen(
     val titleState = viewModel.songTitle.value
 
     val isRecordingState = viewModel.isRecordingState.value
+    var hasStoppedRecording by remember { mutableStateOf(false) }
     val intermediateScore = viewModel.intermediateScore.value
     val currentRecordingTime = viewModel.currentRecordingTime.value
 
@@ -56,6 +57,8 @@ fun RecordingScreen(
     val newNotes by viewModel.newNotes.collectAsState()
 
     var outOfRangeNotes by remember { mutableStateOf<List<String>>(emptyList()) }
+
+    val finalScore = viewModel.finalScore.value
 
 
     val launcher = rememberLauncherForActivityResult(
@@ -122,7 +125,7 @@ fun RecordingScreen(
                             outOfRangeNotes = notes
                         })
                 } else {
-                    MyCircularProgressIndicator()
+                    FinalScoreView(finalScore = finalScore)
                 }
             }
             Column(
@@ -169,6 +172,7 @@ fun RecordingScreen(
                         logDebug("Recording button clicked")
                         if (isRecordingState) {
                             logDebug("onClick: recorder stop")
+                            hasStoppedRecording = true
                             viewModel.onEvent(RecordingScreenEvent.StopRecording)
 
                         } else {
@@ -178,7 +182,8 @@ fun RecordingScreen(
                     },
                     colors = buttonColors(
                         containerColor = if (isRecordingState) Color.Red else Color(0xFF284675)
-                    )
+                    ),
+                    enabled = !hasStoppedRecording
                 ) {
                     Text(
                         text = if (isRecordingState) "Stop recording" else "Start recording",
