@@ -55,6 +55,8 @@ fun RecordingScreen(
     val midiNotes by viewModel.midiNotes.collectAsState()
     val newNotes by viewModel.newNotes.collectAsState()
 
+    var outOfRangeNotes by remember { mutableStateOf<List<String>>(emptyList()) }
+
 
     val launcher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -112,7 +114,13 @@ fun RecordingScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 if (midiNotes.isNotEmpty()) {
-                    PianoPlotView(midiNotes, newNotes, currentRecordingTime)
+                    PianoPlotView(
+                        midiNotes,
+                        newNotes,
+                        currentRecordingTime,
+                        onOutOfRangeNotesUpdated = { notes ->
+                            outOfRangeNotes = notes
+                        })
                 } else {
                     MyCircularProgressIndicator()
                 }
@@ -122,8 +130,18 @@ fun RecordingScreen(
                     .fillMaxWidth()
                     .background(Color(0xFFE7C49C))
             ) {
-                //Text(text = "Intermediate score: $intermediateScore")
-                ScoreCircle(score = intermediateScore)
+                Row {
+                    ScoreCircle(score = intermediateScore)
+                    if (outOfRangeNotes.isEmpty()) return@Row
+                    Box(
+                        modifier = Modifier
+                            .padding(top = 25.dp)
+                            .fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(text = "Out of Range: ${outOfRangeNotes.joinToString(", ")}")
+                    }
+                }
             }
             Column(
                 modifier = Modifier
@@ -182,7 +200,8 @@ class PianoPlotViewState {
 fun PianoPlotView(
     midiNotes: List<MidiNote>,
     newNotes: Pair<Window, List<String>>?,
-    currentRecordingTime: Double
+    currentRecordingTime: Double,
+    onOutOfRangeNotesUpdated: (List<String>) -> Unit
 ) {
     val state = remember { PianoPlotViewState() }
     val pixelsPerSecond = 200
@@ -211,10 +230,13 @@ fun PianoPlotView(
             midiNotes.forEach { pianoPlotter!!.add(it) }
             pianoPlotter!!.drawMidiPlot()
         }
-        // TODO: Add newNotes to the bitmap ; Careful about limits
+
         if (newNotes != null) {
             val outOfRangeNotes = pianoPlotter?.add(newNotes.first, newNotes.second)
             pianoPlotter?.drawFFTNotes()
+
+            // Update the outOfRangeNotes state in the parent composable
+            outOfRangeNotes?.let { onOutOfRangeNotesUpdated(it) }
         }
 
         // Draw once for left axis
