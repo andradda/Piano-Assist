@@ -40,10 +40,11 @@ import com.digital.pianoassist.feature_songs.presentation.util.Screen
 @Composable
 fun SongsScreen(
     navController: NavController,
-    viewModel: SongsScreenViewModel = hiltViewModel()
+    songsViewModel: SongsScreenViewModel = hiltViewModel(),
 ) {
     // the public read-only state that just helps the UI observe changes
-    val state = viewModel.state.value
+    val state = songsViewModel.state.value
+    val last30DaysAverage = songsViewModel.last30DaysAverageScore
 
     Scaffold {
         Column(
@@ -64,7 +65,7 @@ fun SongsScreen(
                 )
                 IconButton(
                     onClick = {
-                        viewModel.onEvent(SongsScreenEvent.ToggleOrderSection)
+                        songsViewModel.onEvent(SongsScreenEvent.ToggleOrderSection)
                     },
                 ) {
                     Icon(
@@ -85,7 +86,7 @@ fun SongsScreen(
                         .padding(vertical = 16.dp),
                     songOrder = state.songOrder,
                     onOrderChange = {
-                        viewModel.onEvent(SongsScreenEvent.Order(it))
+                        songsViewModel.onEvent(SongsScreenEvent.Order(it))
                     }
                 )
             }
@@ -101,6 +102,12 @@ fun SongsScreen(
                                     Screen.RecordingScreen.route + "?songId=${song.id}"
                                 )
                             },
+                        onInfoClick = { song_it ->
+                            songsViewModel.receiveLast30DaysAverageScore(
+                                song_it
+                            )
+                        },
+                        last30DaysAverageScore = last30DaysAverage
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                 }

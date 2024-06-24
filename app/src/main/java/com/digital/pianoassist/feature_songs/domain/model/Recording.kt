@@ -4,6 +4,7 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import java.util.Date
 
 @Entity(
     foreignKeys = [
@@ -20,7 +21,8 @@ data class Recording(
     @PrimaryKey(autoGenerate = true)
     val id: Int? = null,
     val songId: Int,
-    val score: Int
+    val score: Int,
+    val date: Date
 )
 
 class InvalidRecordingException(message: String) : Exception(message)

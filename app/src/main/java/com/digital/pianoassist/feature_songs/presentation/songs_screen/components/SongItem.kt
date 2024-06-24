@@ -19,6 +19,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -44,6 +45,8 @@ fun SongItem(
     modifier: Modifier = Modifier,
     cornerRadius: Dp = 10.dp, // default is set to 10 dp
     cutCornerSize: Dp = 30.dp,
+    onInfoClick: (Song) -> Unit, // callback function to be triggered on info click
+    last30DaysAverageScore: State<Double>
 ) {
     var isInfoVisible by rememberSaveable { mutableStateOf(false) }
 
@@ -109,7 +112,12 @@ fun SongItem(
             )
         }
         IconButton(
-            onClick = { isInfoVisible = !isInfoVisible },
+            onClick = {
+                isInfoVisible = !isInfoVisible
+                if (isInfoVisible) {
+                    onInfoClick(song)// trigger the callback on the SongsScreen and then on the ViewModel
+                }
+            },
             modifier = Modifier.align(Alignment.BottomEnd)
         ) {
             Icon(
@@ -123,8 +131,14 @@ fun SongItem(
         enter = fadeIn() + slideInVertically(),
         exit = fadeOut() + slideOutVertically()
     ) {
-        SongInfoRubric(
-            text = "The max score is:" + song.maxScore
-        )
+        Column {
+            SongInfoRubric(
+                text = "The max score is:" + song.maxScore
+            )
+            SongInfoRubric(
+                text = "The LAST 30 DAYS SCORE is: ${last30DaysAverageScore.value}"
+            )
+        }
+
     }
 }

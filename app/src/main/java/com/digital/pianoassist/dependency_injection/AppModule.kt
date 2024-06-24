@@ -10,6 +10,7 @@ import com.digital.pianoassist.feature_songs.domain.repository.RecordingReposito
 import com.digital.pianoassist.feature_songs.domain.repository.SongRepository
 import com.digital.pianoassist.feature_songs.domain.use_cases.AddRecordingUseCase
 import com.digital.pianoassist.feature_songs.domain.use_cases.GetMidiStreamUseCase
+import com.digital.pianoassist.feature_songs.domain.use_cases.GetRecordingsUseCase
 import com.digital.pianoassist.feature_songs.domain.use_cases.GetSongUseCase
 import com.digital.pianoassist.feature_songs.domain.use_cases.GetSongsUseCase
 import com.digital.pianoassist.feature_songs.domain.use_cases.PerformRecordingUseCase
@@ -53,7 +54,9 @@ object AppModule {
             app,
             AppDatabase::class.java,
             AppDatabase.DATABASE_NAME
-        ).build()
+        )
+            .fallbackToDestructiveMigration()
+            .build()
     }
 
     @Provides
@@ -77,11 +80,12 @@ object AppModule {
     ): UseCases {
         return UseCases(
             getSongsUseCase = GetSongsUseCase(songRepository),
-            addRecordingUseCase = AddRecordingUseCase(songRepository, recordingRepository),
+            addRecordingUseCase = AddRecordingUseCase(recordingRepository),
             getSongUseCase = GetSongUseCase(songRepository),
             getMidiStreamUseCase = GetMidiStreamUseCase(songRepository),
             performRecordingUseCase = PerformRecordingUseCase(context),
-            updateMaxScoreUseCase = UpdateMaxScoreUseCase(songRepository)
+            updateMaxScoreUseCase = UpdateMaxScoreUseCase(songRepository),
+            getRecordingsUseCase = GetRecordingsUseCase(recordingRepository)
         )
     }
 }

@@ -151,6 +151,7 @@ class RecordingScreenViewModel @Inject constructor(
                     _finalScore.doubleValue = useCases.performRecordingUseCase.receiveFinalScore()
                     println("finalScore received = $finalScore")
                     currentSelectedSong?.let {
+                        useCases.addRecordingUseCase(currentSongId!!, finalScore.value.toInt())
                         println("$finalScore > ${it.maxScore}")
                         if (_finalScore.doubleValue > it.maxScore) {
                             logDebug("$finalScore > ${it.maxScore}")

@@ -1,9 +1,11 @@
 package com.digital.pianoassist.feature_songs.presentation.songs_screen
 
 import androidx.compose.runtime.State
+import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.digital.pianoassist.feature_songs.domain.model.Song
 import com.digital.pianoassist.feature_songs.domain.use_cases.UseCases
 import com.digital.pianoassist.feature_songs.domain.util.OrderType
 import com.digital.pianoassist.feature_songs.domain.util.SongOrder
@@ -11,6 +13,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /*
@@ -45,6 +48,9 @@ class SongsScreenViewModel @Inject constructor(
     init { // this is called when the class is instantiated so it will have initial values on the screen
         getSongs(SongOrder.Title(OrderType.Descending))
     }
+
+    private val _last30DaysAverageScore = mutableDoubleStateOf(0.0)
+    val last30DaysAverageScore: State<Double> = _last30DaysAverageScore
 
     fun onEvent(event: SongsScreenEvent) {
         when (event) {
@@ -85,5 +91,15 @@ class SongsScreenViewModel @Inject constructor(
                 )
             }
             .launchIn(viewModelScope) // launchIn returns a Job
+    }
+
+    fun receiveLast30DaysAverageScore(song: Song) {
+        viewModelScope.launch {
+            val recordings = useCases.getRecordingsUseCase(song)
+            val averageScore = recordings?.map { it.score }?.average()
+            if (averageScore != null) {
+                _last30DaysAverageScore.doubleValue = averageScore
+            }
+        }
     }
 }

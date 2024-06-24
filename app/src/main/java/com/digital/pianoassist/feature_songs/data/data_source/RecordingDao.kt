@@ -4,18 +4,13 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
 import com.digital.pianoassist.feature_songs.domain.model.Recording
-import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface RecordingDao {
-    @Query("SELECT * FROM recording")
-    fun getAllRecordings(): Flow<List<Recording>>
-
     @Insert
     suspend fun insertRecording(recording: Recording)
 
-    //@Query("SELECT * FROM recording WHERE ")
-    //fun getAllRecordingsOfSong(song: Song): Flow<List<Recording>>
-
-    // also filtering should go here
+    // * 1000 to convert from s to ms (date field is in ms)
+    @Query("SELECT * FROM Recording WHERE songId = :id AND date >= strftime('%s', 'now', '-30 days') * 1000")
+    suspend fun getAllRecordingsOfSongLast30Days(id: Int): List<Recording>
 }
