@@ -2,6 +2,7 @@ package com.digital.pianoassist.feature_songs.presentation.songs_screen
 
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableDoubleStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -55,6 +56,9 @@ class SongsScreenViewModel @Inject constructor(
     private val _last30DaysScores = mutableStateOf(listOf<Int>())
     val last30DaysScores: State<List<Int>> = _last30DaysScores
 
+    private val _maxScore = mutableIntStateOf(0)
+    val maxScore: State<Int> = _maxScore
+
     fun onEvent(event: SongsScreenEvent) {
         when (event) {
             is SongsScreenEvent.Order -> {
@@ -103,6 +107,15 @@ class SongsScreenViewModel @Inject constructor(
             val averageScore = if (scores.isNotEmpty()) scores.average() else 0.0
             _last30DaysScores.value = scores
             _last30DaysAverageScore.doubleValue = averageScore
+        }
+    }
+
+    fun receiveMaxScore(song: Song) {
+        viewModelScope.launch {
+            val searchedSong = song.id?.let { useCases.getSongUseCase(it) }
+            if (searchedSong != null) {
+                _maxScore.intValue = searchedSong.maxScore
+            }
         }
     }
 }

@@ -47,7 +47,8 @@ fun SongItem(
     cutCornerSize: Dp = 30.dp,
     onInfoClick: (Song) -> Unit, // callback function to be triggered on info click
     last30DaysAverageScore: State<Double>,
-    last30DaysScores: List<Int>
+    last30DaysScores: List<Int>,
+    maxScore: State<Int>
 ) {
     var isInfoVisible by rememberSaveable { mutableStateOf(false) }
 
@@ -134,7 +135,7 @@ fun SongItem(
     ) {
         Column {
             SongInfoRubric(
-                text = "The max score is:" + song.maxScore
+                text = "The max score is: ${maxScore.value}"
             )
             SongInfoRubric(
                 text = "The last 30 days score average is: ${last30DaysAverageScore.value}"

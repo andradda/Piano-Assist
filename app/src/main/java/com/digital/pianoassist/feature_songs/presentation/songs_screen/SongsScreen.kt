@@ -46,6 +46,7 @@ fun SongsScreen(
     val state = songsViewModel.state.value
     val last30DaysAverage = songsViewModel.last30DaysAverageScore
     val last30DaysScores = songsViewModel.last30DaysScores.value
+    val maxScore = songsViewModel.maxScore
 
     Scaffold {
         Column(
@@ -107,9 +108,11 @@ fun SongsScreen(
                             songsViewModel.receiveLast30DaysAverageScore(
                                 song_it
                             )
+                            songsViewModel.receiveMaxScore(song_it)
                         },
                         last30DaysAverageScore = last30DaysAverage,
-                        last30DaysScores = last30DaysScores
+                        last30DaysScores = last30DaysScores,
+                        maxScore = maxScore
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                 }
