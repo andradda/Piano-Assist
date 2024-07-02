@@ -138,7 +138,7 @@ fun SongItem(
                 text = "The max score is: ${maxScore.value}"
             )
             SongInfoRubric(
-                text = "The last 30 days score average is: ${last30DaysAverageScore.value}"
+                text = "The last 30 days score average is: %.2f".format(last30DaysAverageScore.value)
             )
             PerformanceGraph(scores = last30DaysScores)
         }
