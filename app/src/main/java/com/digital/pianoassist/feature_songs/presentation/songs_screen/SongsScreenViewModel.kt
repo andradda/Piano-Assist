@@ -52,6 +52,9 @@ class SongsScreenViewModel @Inject constructor(
     private val _last30DaysAverageScore = mutableDoubleStateOf(0.0)
     val last30DaysAverageScore: State<Double> = _last30DaysAverageScore
 
+    private val _last30DaysScores = mutableStateOf(listOf<Int>())
+    val last30DaysScores: State<List<Int>> = _last30DaysScores
+
     fun onEvent(event: SongsScreenEvent) {
         when (event) {
             is SongsScreenEvent.Order -> {
@@ -96,10 +99,10 @@ class SongsScreenViewModel @Inject constructor(
     fun receiveLast30DaysAverageScore(song: Song) {
         viewModelScope.launch {
             val recordings = useCases.getRecordingsUseCase(song)
-            val averageScore = recordings?.map { it.score }?.average()
-            if (averageScore != null) {
-                _last30DaysAverageScore.doubleValue = averageScore
-            }
+            val scores = recordings?.map { it.score } ?: emptyList()
+            val averageScore = if (scores.isNotEmpty()) scores.average() else 0.0
+            _last30DaysScores.value = scores
+            _last30DaysAverageScore.doubleValue = averageScore
         }
     }
 }

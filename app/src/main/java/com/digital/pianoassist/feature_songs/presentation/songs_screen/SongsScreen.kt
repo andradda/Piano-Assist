@@ -45,6 +45,7 @@ fun SongsScreen(
     // the public read-only state that just helps the UI observe changes
     val state = songsViewModel.state.value
     val last30DaysAverage = songsViewModel.last30DaysAverageScore
+    val last30DaysScores = songsViewModel.last30DaysScores.value
 
     Scaffold {
         Column(
@@ -107,7 +108,8 @@ fun SongsScreen(
                                 song_it
                             )
                         },
-                        last30DaysAverageScore = last30DaysAverage
+                        last30DaysAverageScore = last30DaysAverage,
+                        last30DaysScores = last30DaysScores
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                 }

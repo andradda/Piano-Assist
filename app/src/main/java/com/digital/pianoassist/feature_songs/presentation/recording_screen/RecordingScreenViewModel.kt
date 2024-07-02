@@ -156,7 +156,6 @@ class RecordingScreenViewModel @Inject constructor(
                         if (_finalScore.doubleValue > it.maxScore) {
                             logDebug("$finalScore > ${it.maxScore}")
                             useCases.updateMaxScoreUseCase(it, _finalScore.doubleValue.toInt())
-                            // TODO("PRAGMA wal_autocheckpoint for automatically update in the original database")
                         }
                     }
                 }

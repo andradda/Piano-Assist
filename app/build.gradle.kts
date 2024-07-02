@@ -6,7 +6,6 @@ plugins {
     id("kotlin-parcelize")
 }
 
-
 android {
     namespace = "com.digital.pianoassist"
     compileSdk = 34
@@ -109,5 +108,8 @@ dependencies {
 
     // Midi
     implementation(files("libs/android-midi-lib-1.0-SNAPSHOT.jar"))
+
+    // Charts
+    implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
 
 }
